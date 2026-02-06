@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { Heart, ExternalLink, X, MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScoreCircle } from "@/components/ui/score-circle";
+import { toast } from "sonner";
 import type { JobRow } from "@/lib/supabase/queries";
 
 interface TopJobsProps {
@@ -13,15 +15,58 @@ interface TopJobsProps {
   scoreMap: Record<string, number>;
 }
 
-export function TopJobs({ jobs, scoreMap }: TopJobsProps) {
+export function TopJobs({ jobs: initialJobs, scoreMap }: TopJobsProps) {
   const t = useTranslations("dashboard");
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
+
+  const handleSave = useCallback(async (jobId: string) => {
+    setHiddenIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      toast.success(t("jobSaved"));
+    } catch {
+      setHiddenIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.error(t("actionFailed"));
+    }
+  }, [t]);
+
+  const handleDismiss = useCallback(async (jobId: string) => {
+    setHiddenIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch("/api/jobs/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (!res.ok) throw new Error("Dismiss failed");
+      toast.success(t("jobDismissed"));
+    } catch {
+      setHiddenIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.error(t("actionFailed"));
+    }
+  }, [t]);
+
+  const visibleJobs = initialJobs.filter((job) => !hiddenIds.has(job.id));
 
   return (
     <section>
       <h2 className="text-xl font-semibold mb-4">{t("topJobsToday")}</h2>
       <div className="relative">
         <div className="flex overflow-x-auto gap-4 pb-2 snap-x snap-mandatory scroll-smooth -mx-6 px-6">
-          {jobs.map((job) => {
+          {visibleJobs.map((job) => {
             const score = scoreMap[job.id] ?? 0;
 
             return (
@@ -54,6 +99,7 @@ export function TopJobs({ jobs, scoreMap }: TopJobsProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t("save")}
+                      onClick={() => handleSave(job.id)}
                     >
                       <Heart className="size-4" />
                     </Button>
@@ -75,6 +121,7 @@ export function TopJobs({ jobs, scoreMap }: TopJobsProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t("dismiss")}
+                      onClick={() => handleDismiss(job.id)}
                     >
                       <X className="size-4" />
                     </Button>

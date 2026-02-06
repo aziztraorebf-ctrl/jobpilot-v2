@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { JobFilters } from "@/components/jobs/job-filters";
 import { JobCard } from "@/components/jobs/job-card";
+import { toast } from "sonner";
 import type { JobRow } from "@/lib/supabase/queries";
 
 interface Filters {
@@ -32,15 +33,56 @@ export function JobList({
     minScore: 0,
   });
 
-  // Build a Set for O(1) dismissed lookups
-  const dismissedSet = useMemo(
-    () => new Set(initialDismissedIds),
-    [initialDismissedIds]
+  // Build a Set for O(1) dismissed lookups - use state for optimistic updates
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(
+    () => new Set(initialDismissedIds)
   );
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
     setFilters(newFilters);
   }, []);
+
+  const handleDismiss = useCallback(async (jobId: string) => {
+    if (!jobId) return;
+    setDismissedIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch("/api/jobs/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (!res.ok) throw new Error("Dismiss failed");
+      toast.success(t("jobDismissed"));
+    } catch {
+      setDismissedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.error(t("actionFailed"));
+    }
+  }, [t]);
+
+  const handleBookmark = useCallback(async (jobId: string) => {
+    if (!jobId) return;
+    setDismissedIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (!res.ok) throw new Error("Bookmark failed");
+      toast.success(t("jobSaved"));
+    } catch {
+      setDismissedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.error(t("actionFailed"));
+    }
+  }, [t]);
 
   const filteredJobs = useMemo(() => {
     const searchLower = filters.search.toLowerCase();
@@ -48,7 +90,7 @@ export function JobList({
     return initialJobs
       .filter((job) => {
         // Exclude dismissed jobs
-        if (dismissedSet.has(job.id)) {
+        if (dismissedIds.has(job.id)) {
           return false;
         }
 
@@ -86,7 +128,7 @@ export function JobList({
         const scoreB = initialScoreMap[b.id] ?? 0;
         return scoreB - scoreA;
       });
-  }, [filters, initialJobs, initialScoreMap, dismissedSet]);
+  }, [filters, initialJobs, initialScoreMap, dismissedIds]);
 
   return (
     <div className="space-y-4">
@@ -107,6 +149,8 @@ export function JobList({
           key={job.id}
           job={job}
           score={initialScoreMap[job.id] ?? 0}
+          onBookmark={handleBookmark}
+          onDismiss={handleDismiss}
         />
       ))}
     </div>

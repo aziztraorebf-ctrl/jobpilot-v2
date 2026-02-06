@@ -50,7 +50,10 @@
     "apply": "Apply",
     "dismiss": "Dismiss",
     "unknownCompany": "Unknown company",
-    "unknownJob": "Untitled job"
+    "unknownJob": "Untitled job",
+    "jobSaved": "Job saved to applications",
+    "jobDismissed": "Job dismissed",
+    "actionFailed": "Action failed, please try again"
   },
   "jobs": {
     "title": "Job Listings",
@@ -73,7 +76,15 @@
     "dismiss": "Dismiss",
     "today": "Today",
     "daysAgo": "{count}d ago",
-    "score": "Match score"
+    "score": "Match score",
+    "jobDismissed": "Job dismissed",
+    "jobSaved": "Job saved",
+    "actionFailed": "Action failed, please try again",
+    "active": "Active",
+    "dismissed": "Dismissed",
+    "restore": "Restore",
+    "jobRestored": "Job restored",
+    "noDismissedJobs": "No dismissed jobs"
   },
   "applications": {
     "title": "Application Pipeline",

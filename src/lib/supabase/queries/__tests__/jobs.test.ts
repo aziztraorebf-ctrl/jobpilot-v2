@@ -34,6 +34,8 @@ import {
   getJobById,
   dismissJob,
   getDismissedJobIds,
+  getDismissedJobs,
+  restoreJob,
 } from "../jobs";
 
 // ---------------------------------------------------------------------------
@@ -364,6 +366,96 @@ describe("getDismissedJobIds", () => {
 
     await expect(getDismissedJobIds(TEST_USER_ID)).rejects.toThrow(
       "Failed to fetch dismissed jobs: network error"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getDismissedJobs
+// ---------------------------------------------------------------------------
+
+describe("getDismissedJobs", () => {
+  it("returns full job rows for dismissed jobs", async () => {
+    const jobRow = makeJobRow({ id: "jl-dismissed-1" });
+    tableResponses["seen_jobs"] = [
+      {
+        data: [
+          { job_listing_id: "jl-dismissed-1", job_listings: jobRow },
+        ],
+        error: null,
+      },
+    ];
+
+    const result = await getDismissedJobs(TEST_USER_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("jl-dismissed-1");
+    expect(mockSupabase.from).toHaveBeenCalledWith("seen_jobs");
+  });
+
+  it("returns empty array when no dismissed jobs exist", async () => {
+    tableResponses["seen_jobs"] = [{ data: [], error: null }];
+
+    const result = await getDismissedJobs(TEST_USER_ID);
+
+    expect(result).toEqual([]);
+  });
+
+  it("filters out null job_listings entries", async () => {
+    tableResponses["seen_jobs"] = [
+      {
+        data: [
+          { job_listing_id: "jl-1", job_listings: makeJobRow({ id: "jl-1" }) },
+          { job_listing_id: "jl-2", job_listings: null },
+        ],
+        error: null,
+      },
+    ];
+
+    const result = await getDismissedJobs(TEST_USER_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("jl-1");
+  });
+
+  it("throws on query error", async () => {
+    tableResponses["seen_jobs"] = [
+      { data: null, error: { message: "connection lost" } },
+    ];
+
+    await expect(getDismissedJobs(TEST_USER_ID)).rejects.toThrow(
+      "Failed to fetch dismissed jobs: connection lost"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// restoreJob
+// ---------------------------------------------------------------------------
+
+describe("restoreJob", () => {
+  it("updates seen_jobs with dismissed=false", async () => {
+    tableResponses["seen_jobs"] = [{ data: null, error: null }];
+
+    await restoreJob(TEST_USER_ID, "job-to-restore");
+
+    expect(mockSupabase.from).toHaveBeenCalledWith("seen_jobs");
+    expect(mockSupabase.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws when jobListingId is empty", async () => {
+    await expect(restoreJob(TEST_USER_ID, "")).rejects.toThrow(
+      "jobListingId is required"
+    );
+  });
+
+  it("throws on update error", async () => {
+    tableResponses["seen_jobs"] = [
+      { data: null, error: { message: "permission denied" } },
+    ];
+
+    await expect(restoreJob(TEST_USER_ID, "bad-id")).rejects.toThrow(
+      "Failed to restore job: permission denied"
     );
   });
 });

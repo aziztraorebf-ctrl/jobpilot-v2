@@ -11,6 +11,8 @@ import type { JobRow } from "@/lib/supabase/queries";
 interface JobCardProps {
   job: JobRow | UnifiedJob;
   score: number;
+  onBookmark?: (jobId: string) => void;
+  onDismiss?: (jobId: string) => void;
 }
 
 function getRelativeDays(dateString: string | null): number | null {
@@ -96,8 +98,9 @@ function getSourceLabel(source: string): string {
   }
 }
 
-export function JobCard({ job, score }: JobCardProps) {
+export function JobCard({ job, score, onBookmark, onDismiss }: JobCardProps) {
   const t = useTranslations("jobs");
+  const jobId = "id" in job ? String((job as Record<string, unknown>).id) : "";
   const days = getRelativeDays(job.posted_at);
   const salaryText = formatSalary(
     job.salary_min,
@@ -130,6 +133,7 @@ export function JobCard({ job, score }: JobCardProps) {
               size="icon"
               aria-label={t("bookmark")}
               title={t("bookmark")}
+              onClick={() => onBookmark?.(jobId)}
             >
               <Bookmark className="size-4" />
             </Button>
@@ -147,6 +151,7 @@ export function JobCard({ job, score }: JobCardProps) {
               size="icon"
               aria-label={t("dismiss")}
               title={t("dismiss")}
+              onClick={() => onDismiss?.(jobId)}
             >
               <X className="size-4" />
             </Button>

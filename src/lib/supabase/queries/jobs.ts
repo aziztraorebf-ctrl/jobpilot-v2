@@ -180,3 +180,45 @@ export async function getDismissedJobIds(userId: string): Promise<string[]> {
 
   return (data ?? []).map((row) => row.job_listing_id);
 }
+
+/**
+ * Fetch full job data for all dismissed jobs for a given user.
+ * Joins seen_jobs -> job_listings to return complete job rows.
+ */
+export async function getDismissedJobs(userId: string): Promise<JobRow[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("seen_jobs")
+    .select("job_listing_id, job_listings(*)")
+    .eq("user_id", userId)
+    .eq("dismissed", true)
+    .order("seen_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch dismissed jobs: ${error.message}`);
+  }
+
+  return (data ?? [])
+    .map((row) => (row as Record<string, unknown>).job_listings)
+    .filter(Boolean) as JobRow[];
+}
+
+/**
+ * Restore a previously dismissed job by setting dismissed=false.
+ */
+export async function restoreJob(userId: string, jobListingId: string): Promise<void> {
+  if (!jobListingId) {
+    throw new Error("jobListingId is required");
+  }
+
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("seen_jobs")
+    .update({ dismissed: false })
+    .eq("user_id", userId)
+    .eq("job_listing_id", jobListingId);
+
+  if (error) {
+    throw new Error(`Failed to restore job: ${error.message}`);
+  }
+}

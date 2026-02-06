@@ -1,24 +1,26 @@
 import { getTranslations } from "next-intl/server";
 import { JobList } from "@/components/jobs/job-list";
-import { getJobs, getScoreMap, getDismissedJobIds } from "@/lib/supabase/queries";
+import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
+import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs } from "@/lib/supabase/queries";
 import { requireUser } from "@/lib/supabase/get-user";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function JobsPage() {
   const t = await getTranslations("jobs");
   const user = await requireUser();
 
-  let jobs: Awaited<ReturnType<typeof getJobs>>;
-  let dismissedIds: string[];
+  let jobs: Awaited<ReturnType<typeof getJobs>> = [];
+  let dismissedIds: string[] = [];
+  let dismissedJobs: Awaited<ReturnType<typeof getDismissedJobs>> = [];
 
   try {
-    [jobs, dismissedIds] = await Promise.all([
+    [jobs, dismissedIds, dismissedJobs] = await Promise.all([
       getJobs(),
       getDismissedJobIds(user.id),
+      getDismissedJobs(user.id),
     ]);
   } catch (error) {
     console.error("[JobsPage] Failed to fetch data:", error);
-    jobs = [];
-    dismissedIds = [];
   }
 
   let scoreMap: Record<string, number> = {};
@@ -32,11 +34,24 @@ export default async function JobsPage() {
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">{t("title")}</h1>
-      <JobList
-        initialJobs={jobs}
-        initialScoreMap={scoreMap}
-        initialDismissedIds={dismissedIds}
-      />
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">{t("active")}</TabsTrigger>
+          <TabsTrigger value="dismissed">
+            {t("dismissed")} ({dismissedJobs.length})
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="active" className="mt-4">
+          <JobList
+            initialJobs={jobs}
+            initialScoreMap={scoreMap}
+            initialDismissedIds={dismissedIds}
+          />
+        </TabsContent>
+        <TabsContent value="dismissed" className="mt-4">
+          <DismissedJobs initialJobs={dismissedJobs} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

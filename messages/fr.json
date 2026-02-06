@@ -50,7 +50,10 @@
     "apply": "Postuler",
     "dismiss": "Ignorer",
     "unknownCompany": "Entreprise inconnue",
-    "unknownJob": "Poste sans titre"
+    "unknownJob": "Poste sans titre",
+    "jobSaved": "Offre sauvegardee dans les candidatures",
+    "jobDismissed": "Offre retiree",
+    "actionFailed": "Action echouee, reessayez"
   },
   "jobs": {
     "title": "Offres d'emploi",
@@ -73,7 +76,15 @@
     "dismiss": "Ignorer",
     "today": "Aujourd'hui",
     "daysAgo": "Il y a {count}j",
-    "score": "Score de compatibilite"
+    "score": "Score de compatibilite",
+    "jobDismissed": "Offre retiree",
+    "jobSaved": "Offre sauvegardee",
+    "actionFailed": "Action echouee, reessayez",
+    "active": "Actives",
+    "dismissed": "Retirees",
+    "restore": "Restaurer",
+    "jobRestored": "Offre restauree",
+    "noDismissedJobs": "Aucune offre retiree"
   },
   "applications": {
     "title": "Pipeline de candidatures",
