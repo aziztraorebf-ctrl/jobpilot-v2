@@ -313,6 +313,7 @@ describe("updateResume", () => {
       file_name: "cv-renamed.pdf",
     });
     expect(mockClient.eq).toHaveBeenCalledWith("id", MOCK_RESUME.id);
+    expect(mockClient.eq).toHaveBeenCalledWith("user_id", TEST_USER_ID);
     expect(mockClient.select).toHaveBeenCalled();
     expect(mockClient.single).toHaveBeenCalled();
     // No unset call: getSupabase called once

@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     if (uploadError) {
       console.error("[API] Storage upload error:", uploadError.message);
       return NextResponse.json(
-        { error: `Storage upload failed: ${uploadError.message}` },
+        { error: "Storage upload failed. Please try again." },
         { status: 500 }
       );
     }

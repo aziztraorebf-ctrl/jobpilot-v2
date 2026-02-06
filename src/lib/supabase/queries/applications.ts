@@ -106,7 +106,7 @@ export async function getApplications(userId: string): Promise<ApplicationWithJo
     throw new Error(`Failed to fetch applications: ${error.message}`);
   }
 
-  return data;
+  return data ?? [];
 }
 
 /**

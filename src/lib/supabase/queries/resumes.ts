@@ -125,6 +125,7 @@ export async function updateResume(
     .from("resumes")
     .update(data)
     .eq("id", id)
+    .eq("user_id", userId)
     .select()
     .single();
 
