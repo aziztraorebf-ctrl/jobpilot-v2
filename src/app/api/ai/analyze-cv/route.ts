@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     if (resumeId) {
       await updateResume(user.id, resumeId, {
-        parsed_data: parsed as unknown as Json,
+        parsed_data: parsed as Json,
       });
     }
 

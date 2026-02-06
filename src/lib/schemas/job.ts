@@ -1,21 +1,6 @@
 import { z } from "zod";
 import { createHash } from "crypto";
 
-// --- Jooble API response schema ---
-export const JoobleJobSchema = z.object({
-  title: z.string().min(1),
-  company: z.string().nullish().default(null),
-  location: z.string().nullish().default(null),
-  salary: z.string().nullish().default(null),
-  snippet: z.string().nullish().default(null),
-  link: z.url(),
-  type: z.string().nullish().default(null),
-  updated: z.string().nullish().default(null),
-  id: z.union([z.string(), z.number()]).transform(String).nullish().default(null),
-});
-
-export type JoobleJob = z.infer<typeof JoobleJobSchema>;
-
 // --- Adzuna API response schema ---
 export const AdzunaJobSchema = z.object({
   id: z.union([z.string(), z.number()]).transform(String),
@@ -118,36 +103,6 @@ function detectRemoteType(
     return "hybrid";
   }
   return "unknown";
-}
-
-export function normalizeJoobleJob(raw: JoobleJob): UnifiedJob {
-  const hash = computeDedupHash(
-    raw.title,
-    raw.company ?? null,
-    raw.location ?? null
-  );
-  return {
-    source: "jooble",
-    source_id: raw.id ?? null,
-    source_url: raw.link,
-    dedup_hash: hash,
-    title: raw.title,
-    company_name: raw.company ?? null,
-    location: raw.location ?? null,
-    location_lat: null,
-    location_lng: null,
-    description: raw.snippet ?? null,
-    salary_min: null,
-    salary_max: null,
-    salary_currency: "CAD",
-    salary_is_predicted: false,
-    job_type: raw.type ?? null,
-    category: null,
-    contract_type: null,
-    remote_type: detectRemoteType(raw.title, raw.snippet ?? null),
-    posted_at: raw.updated ?? null,
-    raw_data: raw,
-  };
 }
 
 // --- JSearch API response schema ---

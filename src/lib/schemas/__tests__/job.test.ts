@@ -1,33 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  JoobleJobSchema,
   AdzunaJobSchema,
-  normalizeJoobleJob,
   normalizeAdzunaJob,
   computeDedupHash,
 } from "../job";
-
-describe("JoobleJobSchema", () => {
-  it("validates a valid Jooble response", () => {
-    const raw = {
-      title: "Data Analyst",
-      company: "Desjardins",
-      location: "Montreal, QC",
-      salary: "60000",
-      snippet: "Nous cherchons un analyste...",
-      link: "https://jooble.org/jobs/123",
-      type: "Full-time",
-      updated: "2026-01-20T10:00:00Z",
-      id: "123",
-    };
-    expect(JoobleJobSchema.safeParse(raw).success).toBe(true);
-  });
-
-  it("rejects missing title", () => {
-    const raw = { company: "Test", link: "https://example.com" };
-    expect(JoobleJobSchema.safeParse(raw).success).toBe(false);
-  });
-});
 
 describe("AdzunaJobSchema", () => {
   it("validates a valid Adzuna response", () => {
@@ -47,28 +23,6 @@ describe("AdzunaJobSchema", () => {
       contract_time: "full_time",
     };
     expect(AdzunaJobSchema.safeParse(raw).success).toBe(true);
-  });
-});
-
-describe("normalizeJoobleJob", () => {
-  it("converts Jooble job to UnifiedJob", () => {
-    const jooble = {
-      title: "Data Analyst",
-      company: "Desjardins",
-      location: "Montreal, QC",
-      salary: "60000-75000",
-      snippet: "Nous cherchons un analyste...",
-      link: "https://jooble.org/jobs/123",
-      type: "Full-time",
-      updated: "2026-01-20T10:00:00Z",
-      id: "123",
-    };
-    const unified = normalizeJoobleJob(jooble);
-    expect(unified.source).toBe("jooble");
-    expect(unified.title).toBe("Data Analyst");
-    expect(unified.company_name).toBe("Desjardins");
-    expect(unified.source_url).toBe("https://jooble.org/jobs/123");
-    expect(unified.dedup_hash).toBeDefined();
   });
 });
 
