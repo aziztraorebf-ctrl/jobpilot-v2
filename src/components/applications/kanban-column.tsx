@@ -1,22 +1,32 @@
+"use client";
+
+import { useDroppable } from "@dnd-kit/react";
+import { CollisionPriority } from "@dnd-kit/abstract";
 import { Badge } from "@/components/ui/badge";
-import { KanbanCard } from "@/components/applications/kanban-card";
 import { cn } from "@/lib/utils";
-import type { ApplicationWithJob } from "@/lib/supabase/queries";
 
 interface KanbanColumnProps {
+  id: string;
   title: string;
-  status: string;
-  applications: ApplicationWithJob[];
-  scoreMap: Record<string, number>;
   colorClass: string;
+  count: number;
+  children: React.ReactNode;
 }
 
 export function KanbanColumn({
+  id,
   title,
-  applications,
-  scoreMap,
   colorClass,
+  count,
+  children,
 }: KanbanColumnProps) {
+  const { ref, isDropTarget } = useDroppable({
+    id,
+    type: "column",
+    accept: "item",
+    collisionPriority: CollisionPriority.Low,
+  });
+
   return (
     <div className="flex-shrink-0 w-[75vw] sm:w-56 xl:flex-1 xl:min-w-[180px] snap-start">
       <div
@@ -30,17 +40,17 @@ export function KanbanColumn({
           variant="secondary"
           className="bg-white/20 text-white border-transparent"
         >
-          {applications.length}
+          {count}
         </Badge>
       </div>
-      <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[200px]">
-        {applications.map((application) => (
-          <KanbanCard
-            key={application.id}
-            application={application}
-            score={scoreMap[application.job_listing_id] ?? null}
-          />
-        ))}
+      <div
+        ref={ref}
+        className={cn(
+          "bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[200px] transition-colors",
+          isDropTarget && "bg-primary/10 ring-2 ring-primary/30"
+        )}
+      >
+        {children}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Bookmark, ExternalLink, X, MapPin, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,9 +109,23 @@ export function JobCard({ job, score, onBookmark, onDismiss }: JobCardProps) {
     job.salary_currency
   );
 
-  function handleApply() {
+  async function handleApply() {
     if (job.source_url) {
       window.open(job.source_url, "_blank", "noopener,noreferrer");
+    }
+    if (!jobId) return;
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (res.ok) {
+        toast.success(t("applicationTracked"));
+        onDismiss?.(jobId);
+      }
+    } catch {
+      // Silent fail - the external link still opened
     }
   }
 

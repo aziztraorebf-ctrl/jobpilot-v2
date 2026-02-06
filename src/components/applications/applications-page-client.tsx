@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { ViewToggle } from "@/components/applications/view-toggle";
 import { KanbanBoard } from "@/components/applications/kanban-board";
 import { ListView } from "@/components/applications/list-view";
-import type { ApplicationWithJob } from "@/lib/supabase/queries";
+import type { ApplicationWithJob, ApplicationStatus } from "@/lib/supabase/queries";
 
 interface ApplicationsPageClientProps {
   applications: ApplicationWithJob[];
@@ -13,11 +15,38 @@ interface ApplicationsPageClientProps {
 }
 
 export function ApplicationsPageClient({
-  applications,
+  applications: initial,
   scoreMap,
   title,
 }: ApplicationsPageClientProps) {
+  const t = useTranslations("applications");
   const [view, setView] = useState<"kanban" | "list">("kanban");
+  const [applications, setApplications] = useState<ApplicationWithJob[]>(initial);
+
+  const handleStatusChange = useCallback(
+    async (applicationId: string, newStatus: ApplicationStatus) => {
+      const prev = applications;
+      setApplications((apps) =>
+        apps.map((a) =>
+          a.id === applicationId ? { ...a, status: newStatus } : a
+        )
+      );
+
+      try {
+        const res = await fetch(`/api/applications/${applicationId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (!res.ok) throw new Error("Update failed");
+        toast.success(t("statusUpdated"));
+      } catch {
+        setApplications(prev);
+        toast.error(t("statusUpdateFailed"));
+      }
+    },
+    [applications, t]
+  );
 
   return (
     <>
@@ -26,7 +55,11 @@ export function ApplicationsPageClient({
         <ViewToggle view={view} onViewChange={setView} />
       </div>
       {view === "kanban" ? (
-        <KanbanBoard applications={applications} scoreMap={scoreMap} />
+        <KanbanBoard
+          applications={applications}
+          scoreMap={scoreMap}
+          onStatusChange={handleStatusChange}
+        />
       ) : (
         <ListView applications={applications} scoreMap={scoreMap} />
       )}

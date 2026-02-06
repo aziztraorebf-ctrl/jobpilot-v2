@@ -84,7 +84,8 @@
     "dismissed": "Retirees",
     "restore": "Restaurer",
     "jobRestored": "Offre restauree",
-    "noDismissedJobs": "Aucune offre retiree"
+    "noDismissedJobs": "Aucune offre retiree",
+    "applicationTracked": "Candidature suivie automatiquement"
   },
   "applications": {
     "title": "Pipeline de candidatures",
@@ -103,7 +104,9 @@
     "withdrawn": "Retirees",
     "score": "Score",
     "date": "Date",
-    "actions": "Actions"
+    "actions": "Actions",
+    "statusUpdated": "Statut mis a jour",
+    "statusUpdateFailed": "Mise a jour echouee"
   },
   "settings": {
     "title": "Parametres",

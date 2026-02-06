@@ -84,7 +84,8 @@
     "dismissed": "Dismissed",
     "restore": "Restore",
     "jobRestored": "Job restored",
-    "noDismissedJobs": "No dismissed jobs"
+    "noDismissedJobs": "No dismissed jobs",
+    "applicationTracked": "Application tracked automatically"
   },
   "applications": {
     "title": "Application Pipeline",
@@ -103,7 +104,9 @@
     "withdrawn": "Withdrawn",
     "score": "Score",
     "date": "Date",
-    "actions": "Actions"
+    "actions": "Actions",
+    "statusUpdated": "Status updated",
+    "statusUpdateFailed": "Status update failed"
   },
   "settings": {
     "title": "Settings",

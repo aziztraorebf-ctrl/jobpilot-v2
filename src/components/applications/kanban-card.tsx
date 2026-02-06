@@ -1,9 +1,16 @@
+"use client";
+
+import { useSortable } from "@dnd-kit/react/sortable";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ScoreCircle } from "@/components/ui/score-circle";
+import { cn } from "@/lib/utils";
 import type { ApplicationWithJob } from "@/lib/supabase/queries";
 
 interface KanbanCardProps {
+  id: string;
+  index: number;
+  column: string;
   application: ApplicationWithJob;
   score: number | null;
 }
@@ -17,16 +24,33 @@ function getRelevantDate(application: ApplicationWithJob): string {
   return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
 }
 
-export function KanbanCard({ application, score }: KanbanCardProps) {
+export function KanbanCard({
+  id,
+  index,
+  column,
+  application,
+  score,
+}: KanbanCardProps) {
+  const { ref, isDragSource } = useSortable({
+    id,
+    index,
+    type: "item",
+    group: column,
+  });
+
   const jobTitle = application.job_listings?.title ?? "Untitled";
   const company = application.job_listings?.company_name ?? "Unknown";
 
   return (
-    <Card className="gap-2 p-3 hover:shadow-md transition-shadow cursor-pointer">
+    <Card
+      ref={ref}
+      className={cn(
+        "gap-2 p-3 cursor-grab active:cursor-grabbing transition-shadow",
+        isDragSource ? "opacity-50 shadow-lg" : "hover:shadow-md"
+      )}
+    >
       <div>
-        <p className="font-medium text-sm leading-tight">
-          {jobTitle}
-        </p>
+        <p className="font-medium text-sm leading-tight">{jobTitle}</p>
         <p className="text-xs text-muted-foreground">{company}</p>
       </div>
       <div className="flex justify-between items-center">
