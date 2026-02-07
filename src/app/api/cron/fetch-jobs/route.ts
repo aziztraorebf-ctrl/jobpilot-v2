@@ -53,6 +53,7 @@ export async function GET(request: Request) {
               location: j.location,
               score: scores[j.id] ?? 0,
               sourceUrl: j.source_url,
+              description: j.description,
             }));
 
           if (highScoreJobs.length > 0) {
@@ -61,6 +62,7 @@ export async function GET(request: Request) {
                 jobs: highScoreJobs,
                 threshold,
                 date: new Date().toISOString().split("T")[0],
+                keywords,
               })
             );
 

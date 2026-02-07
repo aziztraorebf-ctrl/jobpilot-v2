@@ -32,6 +32,7 @@ export interface ApplicationWithJob {
     location: string | null;
     source_url: string;
     remote_type: string;
+    description: string | null;
   } | null;
 }
 
@@ -80,7 +81,8 @@ const APPLICATION_WITH_JOB_SELECT = `
     company_name,
     location,
     source_url,
-    remote_type
+    remote_type,
+    description
   )
 ` as const;
 

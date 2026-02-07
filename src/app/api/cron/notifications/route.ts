@@ -53,6 +53,7 @@ export async function GET(request: Request) {
               title: j.title,
               company: j.company_name ?? "Unknown",
               score: scores[j.id] ?? 0,
+              description: j.description,
             }));
 
           const weekOf = new Date().toISOString().split("T")[0];
@@ -91,6 +92,7 @@ export async function GET(request: Request) {
               company: app.job_listings?.company_name ?? "Inconnu",
               appliedDaysAgo: daysAgo,
               status: app.status,
+              description: app.job_listings?.description,
             };
           });
 
