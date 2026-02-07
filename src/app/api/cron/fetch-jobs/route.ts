@@ -22,52 +22,57 @@ export async function GET(request: Request) {
     let totalInserted = 0;
 
     for (const profile of profiles) {
-      const prefs = (profile.search_preferences ?? {}) as Record<string, unknown>;
-      const keywords = (prefs.keywords as string[] | undefined) ?? [];
-      const locations = (prefs.locations as string[] | undefined) ?? [];
-      const threshold = (prefs.alert_threshold as number | undefined) ?? 60;
+      try {
+        const prefs = (profile.search_preferences ?? {}) as Record<string, unknown>;
+        const keywords = (prefs.keywords as string[] | undefined) ?? [];
+        const locations = (prefs.locations as string[] | undefined) ?? [];
+        const threshold = (prefs.alert_threshold as number | undefined) ?? 60;
 
-      if (keywords.length === 0) continue;
+        if (keywords.length === 0) continue;
 
-      const query = keywords.join(" ");
-      const location = locations[0] ?? "Canada";
+        const query = keywords.join(" ");
+        const location = locations[0] ?? "Canada";
 
-      // Fetch new jobs
-      const result = await aggregateJobSearch({ keywords: query, location });
-      if (result.jobs.length === 0) continue;
+        // Fetch new jobs
+        const result = await aggregateJobSearch({ keywords: query, location });
+        if (result.jobs.length === 0) continue;
 
-      // Upsert into DB
-      const inserted = await upsertJobs(result.jobs);
-      totalInserted += inserted.length;
+        // Upsert into DB
+        const inserted = await upsertJobs(result.jobs);
+        totalInserted += inserted.length;
 
-      // Check for high-scoring jobs to notify about
-      if (inserted.length > 0) {
-        const insertedIds = inserted.map((j) => j.id);
-        const scores = await getScoreMap(profile.id, insertedIds);
-        const highScoreJobs = inserted
-          .filter((j) => (scores[j.id] ?? 0) >= threshold)
-          .map((j) => ({
-            title: j.title,
-            company: j.company_name ?? "Unknown",
-            location: j.location,
-            score: scores[j.id] ?? 0,
-            sourceUrl: j.source_url,
-          }));
+        // Check for high-scoring jobs to notify about
+        if (inserted.length > 0) {
+          const insertedIds = inserted.map((j) => j.id);
+          const scores = await getScoreMap(profile.id, insertedIds);
+          const highScoreJobs = inserted
+            .filter((j) => (scores[j.id] ?? 0) >= threshold)
+            .map((j) => ({
+              title: j.title,
+              company: j.company_name ?? "Unknown",
+              location: j.location,
+              score: scores[j.id] ?? 0,
+              sourceUrl: j.source_url,
+            }));
 
-        if (highScoreJobs.length > 0) {
-          const html = await render(
-            NewJobsAlert({
-              jobs: highScoreJobs,
-              threshold,
-              date: new Date().toISOString().split("T")[0],
-            })
-          );
+          if (highScoreJobs.length > 0) {
+            const html = await render(
+              NewJobsAlert({
+                jobs: highScoreJobs,
+                threshold,
+                date: new Date().toISOString().split("T")[0],
+              })
+            );
 
-          await sendEmail({
-            subject: `[JobPilot] ${highScoreJobs.length} nouvelle(s) offre(s) correspondante(s)`,
-            html,
-          });
+            await sendEmail({
+              subject: `[JobPilot] ${highScoreJobs.length} nouvelle(s) offre(s) correspondante(s)`,
+              html,
+            });
+          }
         }
+      } catch (profileError: unknown) {
+        const msg = profileError instanceof Error ? profileError.message : String(profileError);
+        console.error(`[Cron fetch-jobs] Profile ${profile.id} failed:`, msg);
       }
     }
 
