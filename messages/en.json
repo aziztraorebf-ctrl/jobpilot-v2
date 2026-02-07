@@ -85,7 +85,8 @@
     "restore": "Restore",
     "jobRestored": "Job restored",
     "noDismissedJobs": "No dismissed jobs",
-    "applicationTracked": "Application tracked automatically"
+    "applicationTracked": "Application tracked automatically",
+    "seen": "Seen"
   },
   "applications": {
     "title": "Application Pipeline",

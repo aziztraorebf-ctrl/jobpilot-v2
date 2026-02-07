@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -42,10 +42,21 @@ export function JobFilters({ onFiltersChange }: JobFiltersProps) {
     [onFiltersChange, search, source, remote, minScore]
   );
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   function handleSearchChange(value: string) {
     setSearch(value);
-    emitChange({ search: value });
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      emitChange({ search: value });
+    }, 300);
   }
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   function handleSourceChange(value: string) {
     setSource(value);

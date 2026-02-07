@@ -1,7 +1,7 @@
 export { getProfile, updateProfile } from "./profiles";
 export type { Profile, ProfileUpdate } from "./profiles";
 
-export { upsertJobs, getJobs, getJobById, dismissJob, getDismissedJobIds, getDismissedJobs, restoreJob } from "./jobs";
+export { upsertJobs, getJobs, getJobById, dismissJob, getDismissedJobIds, getDismissedJobs, restoreJob, getSeenJobIds } from "./jobs";
 export type { JobRow, JobFilters } from "./jobs";
 
 export {

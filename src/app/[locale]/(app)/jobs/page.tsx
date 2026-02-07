@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { JobList } from "@/components/jobs/job-list";
 import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
-import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs } from "@/lib/supabase/queries";
+import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs, getSeenJobIds } from "@/lib/supabase/queries";
 import { requireUser } from "@/lib/supabase/get-user";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -12,12 +12,14 @@ export default async function JobsPage() {
   let jobs: Awaited<ReturnType<typeof getJobs>> = [];
   let dismissedIds: string[] = [];
   let dismissedJobs: Awaited<ReturnType<typeof getDismissedJobs>> = [];
+  let seenIds: string[] = [];
 
   try {
-    [jobs, dismissedIds, dismissedJobs] = await Promise.all([
+    [jobs, dismissedIds, dismissedJobs, seenIds] = await Promise.all([
       getJobs(),
       getDismissedJobIds(user.id),
       getDismissedJobs(user.id),
+      getSeenJobIds(user.id),
     ]);
   } catch (error) {
     console.error("[JobsPage] Failed to fetch data:", error);
@@ -46,6 +48,7 @@ export default async function JobsPage() {
             initialJobs={jobs}
             initialScoreMap={scoreMap}
             initialDismissedIds={dismissedIds}
+            initialSeenIds={seenIds}
           />
         </TabsContent>
         <TabsContent value="dismissed" className="mt-4">

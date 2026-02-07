@@ -12,6 +12,7 @@ import type { JobRow } from "@/lib/supabase/queries";
 interface JobCardProps {
   job: JobRow | UnifiedJob;
   score: number;
+  isSeen?: boolean;
   onBookmark?: (jobId: string) => void;
   onDismiss?: (jobId: string) => void;
 }
@@ -99,7 +100,7 @@ function getSourceLabel(source: string): string {
   }
 }
 
-export function JobCard({ job, score, onBookmark, onDismiss }: JobCardProps) {
+export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardProps) {
   const t = useTranslations("jobs");
   const jobId = "id" in job ? String((job as Record<string, unknown>).id) : "";
   const days = getRelativeDays(job.posted_at);
@@ -130,7 +131,10 @@ export function JobCard({ job, score, onBookmark, onDismiss }: JobCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow py-4">
+    <Card className={cn(
+      "hover:shadow-md transition-shadow py-4",
+      isSeen && "opacity-75 border-l-4 border-l-muted-foreground/30"
+    )}>
       <CardContent className="space-y-3">
         {/* Top section: title + actions */}
         <div className="flex justify-between items-start gap-4">

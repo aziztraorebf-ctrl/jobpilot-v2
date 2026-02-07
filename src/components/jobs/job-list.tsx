@@ -18,12 +18,14 @@ interface JobListProps {
   initialJobs: JobRow[];
   initialScoreMap: Record<string, number>;
   initialDismissedIds: string[];
+  initialSeenIds?: string[];
 }
 
 export function JobList({
   initialJobs,
   initialScoreMap,
   initialDismissedIds,
+  initialSeenIds = [],
 }: JobListProps) {
   const t = useTranslations("jobs");
   const [filters, setFilters] = useState<Filters>({
@@ -37,6 +39,8 @@ export function JobList({
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(
     () => new Set(initialDismissedIds)
   );
+
+  const [seenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
     setFilters(newFilters);
@@ -94,12 +98,18 @@ export function JobList({
           return false;
         }
 
-        // Search filter: match title or company_name
+        // Search filter: match title, company_name, location, description, category
         if (searchLower) {
           const titleMatch = job.title.toLowerCase().includes(searchLower);
           const companyMatch =
             job.company_name?.toLowerCase().includes(searchLower) ?? false;
-          if (!titleMatch && !companyMatch) return false;
+          const locationMatch =
+            job.location?.toLowerCase().includes(searchLower) ?? false;
+          const descMatch =
+            job.description?.slice(0, 500).toLowerCase().includes(searchLower) ?? false;
+          const categoryMatch =
+            job.category?.toLowerCase().includes(searchLower) ?? false;
+          if (!titleMatch && !companyMatch && !locationMatch && !descMatch && !categoryMatch) return false;
         }
 
         // Source filter
@@ -149,6 +159,7 @@ export function JobList({
           key={job.id}
           job={job}
           score={initialScoreMap[job.id] ?? 0}
+          isSeen={seenIds.has(job.id)}
           onBookmark={handleBookmark}
           onDismiss={handleDismiss}
         />

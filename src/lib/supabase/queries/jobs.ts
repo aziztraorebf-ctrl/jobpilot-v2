@@ -222,3 +222,21 @@ export async function restoreJob(userId: string, jobListingId: string): Promise<
     throw new Error(`Failed to restore job: ${error.message}`);
   }
 }
+
+/**
+ * Get IDs of jobs the user has seen (but not dismissed).
+ */
+export async function getSeenJobIds(userId: string): Promise<string[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("seen_jobs")
+    .select("job_listing_id")
+    .eq("user_id", userId)
+    .eq("dismissed", false);
+
+  if (error) {
+    throw new Error(`Failed to fetch seen jobs: ${error.message}`);
+  }
+
+  return (data ?? []).map((row) => row.job_listing_id);
+}

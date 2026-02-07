@@ -85,7 +85,8 @@
     "restore": "Restaurer",
     "jobRestored": "Offre restauree",
     "noDismissedJobs": "Aucune offre retiree",
-    "applicationTracked": "Candidature suivie automatiquement"
+    "applicationTracked": "Candidature suivie automatiquement",
+    "seen": "Vu"
   },
   "applications": {
     "title": "Pipeline de candidatures",

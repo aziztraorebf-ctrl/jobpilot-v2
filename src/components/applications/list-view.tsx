@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScoreCircle } from "@/components/ui/score-circle";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   APPLICATION_STATUSES,
@@ -70,18 +71,14 @@ export function ListView({
         });
 
         if (!response.ok) {
-          // Rollback on failure
-          console.error(
-            "[ListView] Status update failed:",
-            response.status,
-            await response.text()
-          );
           setApplications(previousApplications);
+          toast.error(t("statusUpdateFailed"));
+        } else {
+          toast.success(t("statusUpdated"));
         }
-      } catch (error) {
-        // Rollback on network error
-        console.error("[ListView] Status update error:", error);
+      } catch {
         setApplications(previousApplications);
+        toast.error(t("statusUpdateFailed"));
       }
     },
     [applications]
