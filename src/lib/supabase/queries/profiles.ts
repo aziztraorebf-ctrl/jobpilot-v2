@@ -47,3 +47,24 @@ export async function updateProfile(
 
   return data;
 }
+
+/**
+ * Fetch profiles that have automatic search enabled (daily or weekly).
+ * Returns profiles where notification_frequency is not "manual".
+ */
+export async function getProfilesWithAutoSearch(): Promise<Profile[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .or(
+      "search_preferences->notification_frequency.eq.daily," +
+        "search_preferences->notification_frequency.eq.weekly"
+    );
+
+  if (error) {
+    throw new Error(`Failed to fetch auto-search profiles: ${error.message}`);
+  }
+
+  return data ?? [];
+}

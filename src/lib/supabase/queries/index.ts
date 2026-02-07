@@ -1,4 +1,4 @@
-export { getProfile, updateProfile } from "./profiles";
+export { getProfile, updateProfile, getProfilesWithAutoSearch } from "./profiles";
 export type { Profile, ProfileUpdate } from "./profiles";
 
 export { upsertJobs, getJobs, getJobById, dismissJob, getDismissedJobIds, getDismissedJobs, restoreJob, getSeenJobIds } from "./jobs";
@@ -11,6 +11,8 @@ export {
   updateApplicationStatus,
   deleteApplication,
   getApplicationStats,
+  getStaleApplications,
+  getWeeklyStats,
   APPLICATION_STATUSES,
 } from "./applications";
 export type {

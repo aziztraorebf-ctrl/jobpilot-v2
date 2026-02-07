@@ -345,3 +345,59 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
     avgScore,
   };
 }
+
+/**
+ * Fetch applications that haven't been updated in the given number of days.
+ * Returns applications in "applied" or "interview" status only.
+ */
+export async function getStaleApplications(
+  userId: string,
+  staleDays: number = 14
+): Promise<ApplicationWithJob[]> {
+  const supabase = getSupabase();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - staleDays);
+
+  const { data, error } = await supabase
+    .from("applications")
+    .select(APPLICATION_WITH_JOB_SELECT)
+    .eq("user_id", userId)
+    .in("status", ["applied", "interview"])
+    .lt("updated_at", cutoff.toISOString())
+    .order("updated_at", { ascending: true })
+    .returns<ApplicationWithJob[]>();
+
+  if (error) {
+    throw new Error(`Failed to fetch stale applications: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Get application stats for the past N days.
+ */
+export async function getWeeklyStats(
+  userId: string,
+  days: number = 7
+): Promise<{ appliedCount: number; interviewCount: number }> {
+  const supabase = getSupabase();
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const { data, error } = await supabase
+    .from("applications")
+    .select("status")
+    .eq("user_id", userId)
+    .gte("updated_at", since.toISOString());
+
+  if (error) {
+    throw new Error(`Failed to fetch weekly stats: ${error.message}`);
+  }
+
+  const rows = data ?? [];
+  return {
+    appliedCount: rows.filter((r) => r.status === "applied").length,
+    interviewCount: rows.filter((r) => r.status === "interview").length,
+  };
+}
