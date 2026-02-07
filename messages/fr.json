@@ -160,6 +160,9 @@
     "primary": "Principal",
     "saving": "Sauvegarde en cours...",
     "saveSuccess": "Parametres sauvegardes avec succes",
-    "saveError": "Echec de la sauvegarde des parametres"
+    "saveError": "Echec de la sauvegarde des parametres",
+    "alertThreshold": "Seuil d'alerte",
+    "alertThresholdDescription": "Score minimum pour declencher une notification email",
+    "notificationConfigured": "Notifications configurees"
   }
 }

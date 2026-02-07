@@ -6,6 +6,8 @@ import {
   updateApplicationStatus,
   deleteApplication,
   getApplicationStats,
+  getStaleApplications,
+  getWeeklyStats,
 } from "../applications";
 import {
   createChainBuilder,
@@ -556,6 +558,123 @@ describe("getApplicationStats", () => {
 
     await expect(getApplicationStats(TEST_USER_ID)).rejects.toThrow(
       "Failed to fetch match scores: Schema mismatch"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helper: override .from() on a chain builder so getSupabase().from() works
+// ---------------------------------------------------------------------------
+
+function withFrom(chain: Record<string, unknown>): Record<string, unknown> {
+  chain.from = vi.fn().mockReturnValue(chain);
+  return chain;
+}
+
+// ---------------------------------------------------------------------------
+// Tests: getStaleApplications
+// ---------------------------------------------------------------------------
+
+describe("getStaleApplications", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns applications in applied/interview status older than staleDays", async () => {
+    const staleApp = {
+      ...MOCK_APPLICATION_WITH_JOB,
+      status: "applied",
+      updated_at: "2026-01-01T00:00:00Z",
+    };
+    const mockClient = withFrom(createChainBuilder({
+      data: [staleApp],
+      error: null,
+    }));
+    useMock(mockGetSupabase, mockClient);
+
+    const result = await getStaleApplications(TEST_USER_ID, 14);
+
+    expect(result).toEqual([staleApp]);
+    expect(mockClient.from).toHaveBeenCalledWith("applications");
+    expect(mockClient.eq).toHaveBeenCalledWith("user_id", TEST_USER_ID);
+    expect(mockClient.in).toHaveBeenCalledWith("status", ["applied", "interview"]);
+    expect(mockClient.lt).toHaveBeenCalled();
+    expect(mockClient.order).toHaveBeenCalledWith("updated_at", { ascending: true });
+  });
+
+  it("returns empty array when no stale applications", async () => {
+    const mockClient = withFrom(createChainBuilder({
+      data: [],
+      error: null,
+    }));
+    useMock(mockGetSupabase, mockClient);
+
+    const result = await getStaleApplications(TEST_USER_ID);
+    expect(result).toEqual([]);
+  });
+
+  it("throws on Supabase error", async () => {
+    const mockClient = withFrom(createChainBuilder({
+      data: null,
+      error: { message: "DB error" },
+    }));
+    useMock(mockGetSupabase, mockClient);
+
+    await expect(getStaleApplications(TEST_USER_ID)).rejects.toThrow(
+      "Failed to fetch stale applications: DB error"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: getWeeklyStats
+// ---------------------------------------------------------------------------
+
+describe("getWeeklyStats", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("counts applied and interview statuses from recent period", async () => {
+    const mockClient = withFrom(createChainBuilder({
+      data: [
+        { status: "applied" },
+        { status: "applied" },
+        { status: "interview" },
+        { status: "saved" },
+      ],
+      error: null,
+    }));
+    useMock(mockGetSupabase, mockClient);
+
+    const result = await getWeeklyStats(TEST_USER_ID, 7);
+
+    expect(result).toEqual({ appliedCount: 2, interviewCount: 1 });
+    expect(mockClient.from).toHaveBeenCalledWith("applications");
+    expect(mockClient.eq).toHaveBeenCalledWith("user_id", TEST_USER_ID);
+    expect(mockClient.gte).toHaveBeenCalled();
+  });
+
+  it("returns zero counts when no applications", async () => {
+    const mockClient = withFrom(createChainBuilder({
+      data: [],
+      error: null,
+    }));
+    useMock(mockGetSupabase, mockClient);
+
+    const result = await getWeeklyStats(TEST_USER_ID);
+    expect(result).toEqual({ appliedCount: 0, interviewCount: 0 });
+  });
+
+  it("throws on Supabase error", async () => {
+    const mockClient = withFrom(createChainBuilder({
+      data: null,
+      error: { message: "Stats error" },
+    }));
+    useMock(mockGetSupabase, mockClient);
+
+    await expect(getWeeklyStats(TEST_USER_ID)).rejects.toThrow(
+      "Failed to fetch weekly stats: Stats error"
     );
   });
 });

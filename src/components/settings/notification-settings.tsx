@@ -6,7 +6,6 @@ import { Bell, Clock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -37,6 +36,18 @@ export function NotificationSettings({ searchPreferences }: NotificationSettings
     String(searchPreferences.notification_hour ?? 8).padStart(2, "0")
   );
   const [saving, setSaving] = useState(false);
+  const [alertNewJobs, setAlertNewJobs] = useState(
+    searchPreferences.alert_new_jobs ?? false
+  );
+  const [alertFollowUp, setAlertFollowUp] = useState(
+    searchPreferences.alert_follow_up ?? false
+  );
+  const [alertWeeklySummary, setAlertWeeklySummary] = useState(
+    searchPreferences.alert_weekly_summary ?? false
+  );
+  const [threshold, setThreshold] = useState(
+    String(searchPreferences.alert_threshold ?? 60)
+  );
 
   const hours = Array.from({ length: 13 }, (_, i) => {
     const h = i + 6;
@@ -51,6 +62,10 @@ export function NotificationSettings({ searchPreferences }: NotificationSettings
         ...searchPreferences,
         notification_frequency: frequency,
         notification_hour: parseInt(hour, 10),
+        alert_new_jobs: alertNewJobs,
+        alert_follow_up: alertFollowUp,
+        alert_weekly_summary: alertWeeklySummary,
+        alert_threshold: parseInt(threshold, 10),
       };
 
       const res = await fetch("/api/profile", {
@@ -75,7 +90,7 @@ export function NotificationSettings({ searchPreferences }: NotificationSettings
     } finally {
       setSaving(false);
     }
-  }, [frequency, hour, searchPreferences, t]);
+  }, [frequency, hour, alertNewJobs, alertFollowUp, alertWeeklySummary, threshold, searchPreferences, t]);
 
   return (
     <Card>
@@ -127,30 +142,62 @@ export function NotificationSettings({ searchPreferences }: NotificationSettings
             <Label className="text-base font-semibold">
               {t("emailAlerts")}
             </Label>
-            <Badge variant="secondary" className="text-xs">
-              {t("comingSoon")}
-            </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
             {t("emailAlertsDescription")}
           </p>
-          <div className="space-y-3 opacity-50 pointer-events-none">
+          <div className="space-y-3">
             <label className="flex items-center gap-3">
-              <input type="checkbox" className="size-4 rounded border" />
+              <input
+                type="checkbox"
+                className="size-4 rounded border"
+                checked={alertNewJobs}
+                onChange={(e) => setAlertNewJobs(e.target.checked)}
+              />
               <div className="flex items-center gap-2">
                 <Bell className="size-4" />
                 <span className="text-sm">{t("alertNewJobs")}</span>
               </div>
             </label>
+            {alertNewJobs && (
+              <div className="ml-7 space-y-2">
+                <Label className="text-sm">{t("alertThreshold")}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("alertThresholdDescription")}
+                </p>
+                <Select value={threshold} onValueChange={setThreshold}>
+                  <SelectTrigger className="w-full sm:w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="40">40%</SelectItem>
+                    <SelectItem value="50">50%</SelectItem>
+                    <SelectItem value="60">60%</SelectItem>
+                    <SelectItem value="70">70%</SelectItem>
+                    <SelectItem value="80">80%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <label className="flex items-center gap-3">
-              <input type="checkbox" className="size-4 rounded border" />
+              <input
+                type="checkbox"
+                className="size-4 rounded border"
+                checked={alertFollowUp}
+                onChange={(e) => setAlertFollowUp(e.target.checked)}
+              />
               <div className="flex items-center gap-2">
                 <Bell className="size-4" />
                 <span className="text-sm">{t("alertFollowUp")}</span>
               </div>
             </label>
             <label className="flex items-center gap-3">
-              <input type="checkbox" className="size-4 rounded border" />
+              <input
+                type="checkbox"
+                className="size-4 rounded border"
+                checked={alertWeeklySummary}
+                onChange={(e) => setAlertWeeklySummary(e.target.checked)}
+              />
               <div className="flex items-center gap-2">
                 <Bell className="size-4" />
                 <span className="text-sm">{t("alertWeeklySummary")}</span>

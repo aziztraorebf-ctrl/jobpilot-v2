@@ -22,6 +22,9 @@ export interface SearchPreferencesData {
   notification_frequency?: "manual" | "daily" | "weekly";
   notification_hour?: number;
   alert_threshold?: number;
+  alert_new_jobs?: boolean;
+  alert_follow_up?: boolean;
+  alert_weekly_summary?: boolean;
 }
 
 export interface ProfileData {

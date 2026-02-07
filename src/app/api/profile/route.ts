@@ -15,6 +15,9 @@ const SearchPreferencesSchema = z.object({
   notification_frequency: z.enum(["manual", "daily", "weekly"]).optional(),
   notification_hour: z.number().int().min(0).max(23).optional(),
   alert_threshold: z.number().int().min(0).max(100).optional(),
+  alert_new_jobs: z.boolean().optional(),
+  alert_follow_up: z.boolean().optional(),
+  alert_weekly_summary: z.boolean().optional(),
 });
 
 const ProfilePatchSchema = z
