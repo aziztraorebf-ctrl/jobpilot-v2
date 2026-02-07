@@ -23,6 +23,10 @@ export function ApplicationsPageClient({
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [applications, setApplications] = useState<ApplicationWithJob[]>(initial);
 
+  // NOTE: Rapid consecutive status changes (e.g., two quick DnD moves) may
+  // cause incomplete rollback if both fail, since each captures the snapshot
+  // after the previous optimistic update. Acceptable for expected low-frequency
+  // DnD usage. For high-frequency scenarios, consider a request-keyed rollback map.
   const handleStatusChange = useCallback(
     async (applicationId: string, newStatus: ApplicationStatus) => {
       const prev = applications;

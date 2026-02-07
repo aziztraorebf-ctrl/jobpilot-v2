@@ -53,6 +53,8 @@ export function ListView({
   const [applications, setApplications] =
     useState<ApplicationWithJob[]>(initialApplications);
 
+  // NOTE: Rapid consecutive status changes may cause incomplete rollback.
+  // See applications-page-client.tsx for details on this known limitation.
   const handleStatusChange = useCallback(
     async (id: string, newStatus: ApplicationStatus) => {
       // Optimistic update: apply immediately
@@ -97,8 +99,8 @@ export function ListView({
         </div>
 
         {applications.map((application) => {
-          const jobTitle = application.job_listings?.title ?? "Untitled";
-          const company = application.job_listings?.company_name ?? "Unknown";
+          const jobTitle = application.job_listings?.title ?? t("untitled");
+          const company = application.job_listings?.company_name ?? t("unknownCompany");
           const score = scoreMap[application.job_listing_id] ?? null;
 
           return (
@@ -157,8 +159,8 @@ export function ListView({
       {/* Mobile: card layout */}
       <div className="md:hidden space-y-3">
         {applications.map((application) => {
-          const jobTitle = application.job_listings?.title ?? "Untitled";
-          const company = application.job_listings?.company_name ?? "Unknown";
+          const jobTitle = application.job_listings?.title ?? t("untitled");
+          const company = application.job_listings?.company_name ?? t("unknownCompany");
           const score = scoreMap[application.job_listing_id] ?? null;
 
           return (

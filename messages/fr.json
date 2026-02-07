@@ -86,7 +86,11 @@
     "jobRestored": "Offre restauree",
     "noDismissedJobs": "Aucune offre retiree",
     "applicationTracked": "Candidature suivie automatiquement",
-    "seen": "Vu"
+    "seen": "Vu",
+    "hybrid": "Hybride",
+    "onsite": "Sur site",
+    "unknown": "Inconnu",
+    "unknownCompany": "Entreprise inconnue"
   },
   "applications": {
     "title": "Pipeline de candidatures",
@@ -107,7 +111,9 @@
     "date": "Date",
     "actions": "Actions",
     "statusUpdated": "Statut mis a jour",
-    "statusUpdateFailed": "Mise a jour echouee"
+    "statusUpdateFailed": "Mise a jour echouee",
+    "untitled": "Sans titre",
+    "unknownCompany": "Inconnu"
   },
   "settings": {
     "title": "Parametres",

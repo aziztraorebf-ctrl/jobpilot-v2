@@ -1,6 +1,7 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/react/sortable";
+import { useTranslations } from "next-intl";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ScoreCircle } from "@/components/ui/score-circle";
@@ -31,6 +32,7 @@ export function KanbanCard({
   application,
   score,
 }: KanbanCardProps) {
+  const t = useTranslations("applications");
   const { ref, isDragSource } = useSortable({
     id,
     index,
@@ -38,8 +40,8 @@ export function KanbanCard({
     group: column,
   });
 
-  const jobTitle = application.job_listings?.title ?? "Untitled";
-  const company = application.job_listings?.company_name ?? "Unknown";
+  const jobTitle = application.job_listings?.title ?? t("untitled");
+  const company = application.job_listings?.company_name ?? t("unknownCompany");
 
   return (
     <Card

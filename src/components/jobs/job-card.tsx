@@ -63,18 +63,18 @@ function getRemoteBadgeClasses(
   }
 }
 
-function getRemoteLabel(
+function getRemoteKey(
   remoteType: "onsite" | "hybrid" | "remote" | "unknown"
 ): string {
   switch (remoteType) {
     case "remote":
-      return "Remote";
+      return "remote";
     case "hybrid":
-      return "Hybrid";
+      return "hybrid";
     case "onsite":
-      return "On-site";
+      return "onsite";
     default:
-      return "Unknown";
+      return "unknown";
   }
 }
 
@@ -143,7 +143,7 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardPr
               {job.title}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {job.company_name ?? "Unknown Company"}
+              {job.company_name ?? t("unknownCompany")}
             </p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -215,7 +215,7 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardPr
               getRemoteBadgeClasses(job.remote_type)
             )}
           >
-            {getRemoteLabel(job.remote_type)}
+            {t(getRemoteKey(job.remote_type))}
           </Badge>
 
           {/* Posted date */}

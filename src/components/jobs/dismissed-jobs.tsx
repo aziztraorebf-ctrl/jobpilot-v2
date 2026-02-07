@@ -51,7 +51,7 @@ export function DismissedJobs({ initialJobs }: DismissedJobsProps) {
             <div className="min-w-0 flex-1">
               <p className="font-medium text-sm truncate">{job.title}</p>
               <p className="text-xs text-muted-foreground">
-                {job.company_name ?? "Unknown"}
+                {job.company_name ?? t("unknownCompany")}
               </p>
               {job.location && (
                 <Badge variant="outline" className="mt-1 gap-1 text-xs">

@@ -86,7 +86,11 @@
     "jobRestored": "Job restored",
     "noDismissedJobs": "No dismissed jobs",
     "applicationTracked": "Application tracked automatically",
-    "seen": "Seen"
+    "seen": "Seen",
+    "hybrid": "Hybrid",
+    "onsite": "On-site",
+    "unknown": "Unknown",
+    "unknownCompany": "Unknown Company"
   },
   "applications": {
     "title": "Application Pipeline",
@@ -107,7 +111,9 @@
     "date": "Date",
     "actions": "Actions",
     "statusUpdated": "Status updated",
-    "statusUpdateFailed": "Status update failed"
+    "statusUpdateFailed": "Status update failed",
+    "untitled": "Untitled",
+    "unknownCompany": "Unknown"
   },
   "settings": {
     "title": "Settings",
