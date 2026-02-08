@@ -1,0 +1,70 @@
+interface ApplicationForExport {
+  id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  notes: string | null;
+  job_listings: {
+    title: string;
+    company_name: string | null;
+    location: string | null;
+    source: string;
+    source_url: string;
+    remote_type: string;
+    description: string | null;
+  };
+}
+
+const HEADERS = [
+  "Titre",
+  "Entreprise",
+  "Localisation",
+  "Statut",
+  "Type",
+  "Source",
+  "URL",
+  "Date candidature",
+  "Derniere MAJ",
+  "Notes",
+];
+
+function escapeCsvValue(value: string | null | undefined): string {
+  const str = value ?? "";
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toISOString().split("T")[0];
+  } catch {
+    return iso;
+  }
+}
+
+export function generateApplicationsCsv(
+  applications: ApplicationForExport[]
+): string {
+  const lines: string[] = [HEADERS.join(",")];
+
+  for (const app of applications) {
+    const job = app.job_listings;
+    const row = [
+      escapeCsvValue(job.title),
+      escapeCsvValue(job.company_name),
+      escapeCsvValue(job.location),
+      escapeCsvValue(app.status),
+      escapeCsvValue(job.remote_type),
+      escapeCsvValue(job.source),
+      escapeCsvValue(job.source_url),
+      escapeCsvValue(formatDate(app.created_at)),
+      escapeCsvValue(formatDate(app.updated_at)),
+      escapeCsvValue(app.notes),
+    ];
+    lines.push(row.join(","));
+  }
+
+  return lines.join("\n");
+}
