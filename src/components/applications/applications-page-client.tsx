@@ -3,9 +3,12 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ViewToggle } from "@/components/applications/view-toggle";
 import { KanbanBoard } from "@/components/applications/kanban-board";
 import { ListView } from "@/components/applications/list-view";
+import { generateApplicationsCsv } from "@/lib/utils/csv-export";
 import type { ApplicationWithJob, ApplicationStatus } from "@/lib/supabase/queries";
 
 interface ApplicationsPageClientProps {
@@ -22,6 +25,17 @@ export function ApplicationsPageClient({
   const t = useTranslations("applications");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [applications, setApplications] = useState<ApplicationWithJob[]>(initial);
+
+  function handleExportCsv() {
+    const csv = generateApplicationsCsv(applications);
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jobpilot-candidatures-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   // NOTE: Rapid consecutive status changes (e.g., two quick DnD moves) may
   // cause incomplete rollback if both fail, since each captures the snapshot
@@ -56,7 +70,12 @@ export function ApplicationsPageClient({
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">{title}</h1>
-        <ViewToggle view={view} onViewChange={setView} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCsv} title={t("exportCsv")}>
+            <Download className="h-4 w-4" />
+          </Button>
+          <ViewToggle view={view} onViewChange={setView} />
+        </div>
       </div>
       {view === "kanban" ? (
         <KanbanBoard

@@ -8,11 +8,10 @@ interface ApplicationForExport {
     title: string;
     company_name: string | null;
     location: string | null;
-    source: string;
     source_url: string;
     remote_type: string;
     description: string | null;
-  };
+  } | null;
 }
 
 const HEADERS = [
@@ -21,7 +20,6 @@ const HEADERS = [
   "Localisation",
   "Statut",
   "Type",
-  "Source",
   "URL",
   "Date candidature",
   "Derniere MAJ",
@@ -51,13 +49,13 @@ export function generateApplicationsCsv(
 
   for (const app of applications) {
     const job = app.job_listings;
+    if (!job) continue;
     const row = [
       escapeCsvValue(job.title),
       escapeCsvValue(job.company_name),
       escapeCsvValue(job.location),
       escapeCsvValue(app.status),
       escapeCsvValue(job.remote_type),
-      escapeCsvValue(job.source),
       escapeCsvValue(job.source_url),
       escapeCsvValue(formatDate(app.created_at)),
       escapeCsvValue(formatDate(app.updated_at)),

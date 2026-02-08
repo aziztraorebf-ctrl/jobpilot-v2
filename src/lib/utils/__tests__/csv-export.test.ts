@@ -12,7 +12,6 @@ const MOCK_APPLICATIONS = [
       title: "Full-Stack Developer",
       company_name: "Shopify",
       location: "Montreal, QC",
-      source: "adzuna",
       source_url: "https://adzuna.ca/jobs/1",
       remote_type: "hybrid",
       description: null,
@@ -28,7 +27,6 @@ const MOCK_APPLICATIONS = [
       title: "Data Analyst",
       company_name: "Desjardins",
       location: "Quebec, QC",
-      source: "jsearch",
       source_url: "https://jsearch.example.com/2",
       remote_type: "onsite",
       description: null,
@@ -41,7 +39,7 @@ describe("generateApplicationsCsv", () => {
     const csv = generateApplicationsCsv(MOCK_APPLICATIONS);
     const lines = csv.split("\n");
     expect(lines[0]).toBe(
-      "Titre,Entreprise,Localisation,Statut,Type,Source,URL,Date candidature,Derniere MAJ,Notes"
+      "Titre,Entreprise,Localisation,Statut,Type,URL,Date candidature,Derniere MAJ,Notes"
     );
   });
 
