@@ -28,7 +28,7 @@ const HEADERS = [
 
 function escapeCsvValue(value: string | null | undefined): string {
   const str = value ?? "";
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
