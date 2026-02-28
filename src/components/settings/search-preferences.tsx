@@ -93,13 +93,23 @@ export function SearchPreferences({ searchPreferences }: SearchPreferencesProps)
       ? 0
       : parsedSalary;
 
+    // Confirm any tag still in the input field
+    const finalKeywords = newKeyword.trim() && !keywords.includes(newKeyword.trim())
+      ? [...keywords, newKeyword.trim()]
+      : keywords;
+    const finalLocations = newLocation.trim() && !locations.includes(newLocation.trim())
+      ? [...locations, newLocation.trim()]
+      : locations;
+    if (newKeyword.trim()) setNewKeyword("");
+    if (newLocation.trim()) setNewLocation("");
+
     setSaving(true);
     try {
       // Merge with existing preferences to avoid overwriting notification fields
       const merged = {
         ...searchPreferences,
-        keywords,
-        locations,
+        keywords: finalKeywords,
+        locations: finalLocations,
         salary_min: safeSalaryMin,
         salary_currency: salaryCurrency,
         remote_preference: remotePreference,
@@ -127,7 +137,7 @@ export function SearchPreferences({ searchPreferences }: SearchPreferencesProps)
     } finally {
       setSaving(false);
     }
-  }, [keywords, locations, salaryMin, salaryCurrency, remotePreference, searchPreferences, t]);
+  }, [keywords, locations, newKeyword, newLocation, salaryMin, salaryCurrency, remotePreference, searchPreferences, t]);
 
   return (
     <Card>
