@@ -19,6 +19,7 @@ interface JobListProps {
   initialScoreMap: Record<string, number>;
   initialDismissedIds: string[];
   initialSeenIds?: string[];
+  onJobDismissed?: (jobId: string, job: JobRow) => void;
 }
 
 export function JobList({
@@ -26,6 +27,7 @@ export function JobList({
   initialScoreMap,
   initialDismissedIds,
   initialSeenIds = [],
+  onJobDismissed,
 }: JobListProps) {
   const t = useTranslations("jobs");
   const [filters, setFilters] = useState<Filters>({
@@ -48,6 +50,7 @@ export function JobList({
 
   const handleDismiss = useCallback(async (jobId: string) => {
     if (!jobId) return;
+    const job = initialJobs.find((j) => j.id === jobId);
     setDismissedIds((prev) => new Set(prev).add(jobId));
     try {
       const res = await fetch("/api/jobs/dismiss", {
@@ -56,6 +59,7 @@ export function JobList({
         body: JSON.stringify({ jobListingId: jobId }),
       });
       if (!res.ok) throw new Error("Dismiss failed");
+      if (job) onJobDismissed?.(jobId, job);
       toast.success(t("jobDismissed"));
     } catch {
       setDismissedIds((prev) => {
@@ -65,7 +69,7 @@ export function JobList({
       });
       toast.error(t("actionFailed"));
     }
-  }, [t]);
+  }, [initialJobs, onJobDismissed, t]);
 
   const handleBookmark = useCallback(async (jobId: string) => {
     if (!jobId) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { RotateCcw, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,11 +11,17 @@ import type { JobRow } from "@/lib/supabase/queries";
 
 interface DismissedJobsProps {
   initialJobs: JobRow[];
+  onJobRestored?: (jobId: string) => void;
 }
 
-export function DismissedJobs({ initialJobs }: DismissedJobsProps) {
+export function DismissedJobs({ initialJobs, onJobRestored }: DismissedJobsProps) {
   const t = useTranslations("jobs");
   const [jobs, setJobs] = useState<JobRow[]>(initialJobs);
+
+  // Sync when parent updates the list (e.g. a new job is dismissed from the active tab)
+  useEffect(() => {
+    setJobs(initialJobs);
+  }, [initialJobs]);
 
   const handleRestore = useCallback(async (jobId: string) => {
     const previousJobs = jobs;
@@ -28,12 +34,13 @@ export function DismissedJobs({ initialJobs }: DismissedJobsProps) {
         body: JSON.stringify({ jobListingId: jobId }),
       });
       if (!res.ok) throw new Error("Restore failed");
+      onJobRestored?.(jobId);
       toast.success(t("jobRestored"));
     } catch {
       setJobs(previousJobs);
       toast.error(t("actionFailed"));
     }
-  }, [jobs, t]);
+  }, [jobs, onJobRestored, t]);
 
   if (jobs.length === 0) {
     return (

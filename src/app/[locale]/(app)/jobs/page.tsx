@@ -1,9 +1,7 @@
 import { getTranslations } from "next-intl/server";
-import { JobList } from "@/components/jobs/job-list";
-import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
+import { JobsPageClient } from "@/components/jobs/jobs-page-client";
 import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs, getSeenJobIds } from "@/lib/supabase/queries";
 import { requireUser } from "@/lib/supabase/get-user";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function JobsPage() {
   const t = await getTranslations("jobs");
@@ -34,27 +32,13 @@ export default async function JobsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">{t("title")}</h1>
-      <Tabs defaultValue="active">
-        <TabsList>
-          <TabsTrigger value="active">{t("active")}</TabsTrigger>
-          <TabsTrigger value="dismissed">
-            {t("dismissed")} ({dismissedJobs.length})
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="active" className="mt-4">
-          <JobList
-            initialJobs={jobs}
-            initialScoreMap={scoreMap}
-            initialDismissedIds={dismissedIds}
-            initialSeenIds={seenIds}
-          />
-        </TabsContent>
-        <TabsContent value="dismissed" className="mt-4">
-          <DismissedJobs initialJobs={dismissedJobs} />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <JobsPageClient
+      initialJobs={jobs}
+      initialScoreMap={scoreMap}
+      initialDismissedIds={dismissedIds}
+      initialDismissedJobs={dismissedJobs}
+      initialSeenIds={seenIds}
+      title={t("title")}
+    />
   );
 }
