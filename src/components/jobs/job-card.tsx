@@ -110,23 +110,9 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardPr
     job.salary_currency
   );
 
-  async function handleApply() {
+  function handleApply() {
     if (job.source_url) {
       window.open(job.source_url, "_blank", "noopener,noreferrer");
-    }
-    if (!jobId) return;
-    try {
-      const res = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobListingId: jobId }),
-      });
-      if (res.ok) {
-        toast.success(t("applicationTracked"));
-        onDismiss?.(jobId);
-      }
-    } catch {
-      // Silent fail - the external link still opened
     }
   }
 

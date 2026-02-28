@@ -6,15 +6,8 @@ Issues identifiées en production. Prioriser avant chaque session.
 
 ## Bugs
 
-### [BUG-1] Cliquer "Postuler" crée automatiquement une candidature
-**Priorité :** Haute
-**Signalé :** 2026-02-28
-
-**Comportement actuel :** Cliquer sur le bouton externe "Postuler" (qui ouvre le lien de l'offre) crée automatiquement une entrée dans le pipeline Candidatures avec le statut "Sauvegardée". Résultat : toute offre consultée se retrouve dans le pipeline, ce qui le rend rapidement inutilisable.
-
-**Comportement attendu :** Seul le bouton bookmark (icône signet) doit créer une candidature. Le bouton "Postuler" doit uniquement ouvrir le lien externe sans effet de bord.
-
-**Fichiers probables :** `src/components/jobs/job-card.tsx` — vérifier le `onClick` du bouton postuler.
+### ~~[BUG-1] Cliquer "Postuler" crée automatiquement une candidature~~ ✅ Résolu
+**Résolu :** 2026-02-28 — `handleApply` dans `job-card.tsx` n'ouvre plus que le lien externe.
 
 ---
 
