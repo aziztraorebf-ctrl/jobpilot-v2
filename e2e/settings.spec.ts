@@ -16,7 +16,7 @@ test.describe("Settings Page", () => {
     const notifTab = page.getByRole("tab", { name: /notif/i });
     if (await notifTab.isVisible()) {
       await notifTab.click();
-      await expect(page.getByText(/nouvelles offres|new.*jobs/i)).toBeVisible();
+      await expect(page.getByText(/nouvelles offres|new.*jobs/i).first()).toBeVisible();
     }
   });
 
@@ -24,7 +24,7 @@ test.describe("Settings Page", () => {
     const appearTab = page.getByRole("tab", { name: /apparence|appearance/i });
     if (await appearTab.isVisible()) {
       await appearTab.click();
-      await expect(page.getByText(/theme|dark.*mode/i)).toBeVisible();
+      await expect(page.getByText("Theme", { exact: true })).toBeVisible();
     }
   });
 });
