@@ -82,6 +82,6 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Cron fetch-jobs]", message);
-    return NextResponse.json({ error: "Cron failed" }, { status: 500 });
+    return NextResponse.json({ error: "Cron failed", detail: message }, { status: 500 });
   }
 }
