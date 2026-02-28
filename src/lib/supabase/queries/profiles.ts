@@ -54,17 +54,16 @@ export async function updateProfile(
  */
 export async function getProfilesWithAutoSearch(): Promise<Profile[]> {
   const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .or(
-      "search_preferences->notification_frequency.eq.daily," +
-        "search_preferences->notification_frequency.eq.weekly"
-    );
+  // Fetch all profiles and filter in JS to avoid PostgREST JSONB operator issues
+  const { data, error } = await supabase.from("profiles").select("*");
 
   if (error) {
     throw new Error(`Failed to fetch auto-search profiles: ${error.message}`);
   }
 
-  return data ?? [];
+  return (data ?? []).filter((p) => {
+    const freq = (p.search_preferences as Record<string, unknown> | null)
+      ?.notification_frequency;
+    return freq === "daily" || freq === "weekly";
+  });
 }
