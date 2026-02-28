@@ -129,6 +129,9 @@ export function SearchPreferences({ searchPreferences }: SearchPreferencesProps)
         throw new Error(message);
       }
 
+      // Update local state so tags appear immediately without page reload
+      setKeywords(finalKeywords);
+      setLocations(finalLocations);
       toast.success(t("saveSuccess"));
     } catch (error: unknown) {
       const message =
