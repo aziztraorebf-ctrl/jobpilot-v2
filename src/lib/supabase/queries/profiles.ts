@@ -67,3 +67,51 @@ export async function getProfilesWithAutoSearch(): Promise<Profile[]> {
     return freq === "daily" || freq === "weekly";
   });
 }
+
+const MANUAL_SEARCH_LIMIT = 3;
+const RESET_WINDOW_MS = 24 * 60 * 60 * 1000; // 24h
+
+export interface ManualSearchStatus {
+  remaining: number;
+  resetAt: string;
+}
+
+/**
+ * Get remaining manual searches for user.
+ * Resets counter if last reset was >24h ago.
+ */
+export async function getManualSearchStatus(userId: string): Promise<ManualSearchStatus> {
+  const profile = await getProfile(userId);
+  const resetAt = new Date(profile.manual_search_reset_at);
+  const now = new Date();
+
+  if (now.getTime() - resetAt.getTime() > RESET_WINDOW_MS) {
+    await updateProfile(userId, {
+      manual_search_count: 0,
+      manual_search_reset_at: now.toISOString(),
+    });
+    return { remaining: MANUAL_SEARCH_LIMIT, resetAt: now.toISOString() };
+  }
+
+  const remaining = Math.max(0, MANUAL_SEARCH_LIMIT - profile.manual_search_count);
+  return { remaining, resetAt: profile.manual_search_reset_at };
+}
+
+/**
+ * Increment manual search counter. Throws "MANUAL_SEARCH_LIMIT_REACHED" if limit hit.
+ */
+export async function incrementManualSearch(userId: string): Promise<ManualSearchStatus> {
+  const status = await getManualSearchStatus(userId);
+  if (status.remaining === 0) {
+    throw new Error("MANUAL_SEARCH_LIMIT_REACHED");
+  }
+
+  const profile = await getProfile(userId);
+  const newCount = profile.manual_search_count + 1;
+  await updateProfile(userId, { manual_search_count: newCount });
+
+  return {
+    remaining: Math.max(0, MANUAL_SEARCH_LIMIT - newCount),
+    resetAt: status.resetAt,
+  };
+}
