@@ -44,7 +44,7 @@ export function JobList({
     () => new Set(initialDismissedIds)
   );
 
-  const [seenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
 
   const [scoreModalJob, setScoreModalJob] = useState<{ id: string; title: string } | null>(null);
   const [coverLetterJob, setCoverLetterJob] = useState<{ id: string; title: string } | null>(null);
@@ -99,6 +99,26 @@ export function JobList({
       toast.success(t("jobSaved"));
     } catch {
       setDismissedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.error(t("actionFailed"));
+    }
+  }, [t]);
+
+  const handleMarkSeen = useCallback(async (jobId: string) => {
+    if (!jobId) return;
+    setSeenIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch("/api/jobs/seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (!res.ok) throw new Error("Mark seen failed");
+    } catch {
+      setSeenIds((prev) => {
         const next = new Set(prev);
         next.delete(jobId);
         return next;
@@ -181,6 +201,7 @@ export function JobList({
           isSeen={seenIds.has(job.id)}
           onBookmark={handleBookmark}
           onDismiss={handleDismiss}
+          onMarkSeen={handleMarkSeen}
           onScoreClick={handleScoreClick}
           onCoverLetterClick={handleCoverLetterClick}
         />

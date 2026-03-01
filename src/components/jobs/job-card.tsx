@@ -15,6 +15,7 @@ interface JobCardProps {
   isSeen?: boolean;
   onBookmark?: (jobId: string) => void;
   onDismiss?: (jobId: string) => void;
+  onMarkSeen?: (jobId: string) => void;
   onScoreClick?: (jobId: string) => void;
   onCoverLetterClick?: (jobId: string) => void;
 }
