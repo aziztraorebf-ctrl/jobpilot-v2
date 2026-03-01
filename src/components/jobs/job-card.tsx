@@ -135,7 +135,7 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen,
               </h3>
               {!isSeen && (
                 <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 border-transparent shrink-0">
-                  New
+                  {t("newBadge")}
                 </Badge>
               )}
             </div>
