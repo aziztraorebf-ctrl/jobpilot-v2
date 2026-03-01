@@ -125,7 +125,13 @@
     "tone_professional": "Professionnel",
     "tone_enthusiastic": "Enthousiaste",
     "tone_creative": "Creatif",
-    "tone_formal": "Formel"
+    "tone_formal": "Formel",
+    "trustBadgeVerified": "Verifie depuis votre CV",
+    "trustBadgeReview": "Relecture recommandee",
+    "trustBadgeTooltip": "Cette lettre a ete generee uniquement a partir des informations de votre CV et de l'offre d'emploi. Relisez-la toujours avant de l'envoyer.",
+    "coverLetterSaved": "Lettre de motivation sauvegardee",
+    "coverLetterDownloadTxt": "Telecharger TXT",
+    "coverLetterDownloadDocx": "Telecharger DOCX"
   },
   "applications": {
     "title": "Pipeline de candidatures",
