@@ -1,7 +1,7 @@
 export { getProfile, updateProfile, getProfilesWithAutoSearch, getManualSearchStatus, incrementManualSearch } from "./profiles";
 export type { Profile, ProfileUpdate, ManualSearchStatus } from "./profiles";
 
-export { upsertJobs, getJobs, getJobById, dismissJob, getDismissedJobIds, getDismissedJobs, restoreJob, getSeenJobIds } from "./jobs";
+export { upsertJobs, getJobs, getJobById, dismissJob, getDismissedJobIds, getDismissedJobs, restoreJob, getSeenJobIds, markJobSeen } from "./jobs";
 export type { JobRow, JobFilters } from "./jobs";
 
 export {
