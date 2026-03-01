@@ -127,9 +127,16 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClic
         {/* Top section: title + actions */}
         <div className="flex justify-between items-start gap-4">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold leading-tight truncate">
-              {job.title}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold leading-tight truncate">
+                {job.title}
+              </h3>
+              {!isSeen && (
+                <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 border-transparent shrink-0">
+                  New
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               {job.company_name ?? t("unknownCompany")}
             </p>
