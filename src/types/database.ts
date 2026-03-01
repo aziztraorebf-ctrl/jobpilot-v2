@@ -15,6 +15,8 @@ export interface Database {
           search_preferences: Json;
           openai_tokens_used: number;
           openai_tokens_limit: number;
+          manual_search_count: number;
+          manual_search_reset_at: string;
           created_at: string;
           updated_at: string;
         };
@@ -26,6 +28,8 @@ export interface Database {
           search_preferences?: Json;
           openai_tokens_used?: number;
           openai_tokens_limit?: number;
+          manual_search_count?: number;
+          manual_search_reset_at?: string;
         };
         Update: {
           id?: string;
@@ -35,6 +39,8 @@ export interface Database {
           search_preferences?: Json;
           openai_tokens_used?: number;
           openai_tokens_limit?: number;
+          manual_search_count?: number;
+          manual_search_reset_at?: string;
         };
         Relationships: [];
       };
