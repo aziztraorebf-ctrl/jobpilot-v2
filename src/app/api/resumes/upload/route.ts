@@ -4,6 +4,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import { requireUser } from "@/lib/supabase/get-user";
 import { createResume } from "@/lib/supabase/queries";
 import { apiError } from "@/lib/api/error-response";
+import { PDFParse } from "pdf-parse";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -61,11 +62,21 @@ export async function POST(request: Request) {
     const timestamp = Date.now();
     const storagePath = `${user.id}/${timestamp}-${sanitizedName}`;
 
-    // For .txt files, extract text content directly
+    // Extract raw text for AI analysis
     let rawText: string | null = null;
     if (fileType === "txt") {
-      const textContent = await file.text();
-      rawText = textContent;
+      rawText = await file.text();
+    } else if (fileType === "pdf") {
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const parser = new PDFParse({ data: buffer });
+        const result = await parser.getText();
+        rawText = result.text || null;
+        await parser.destroy();
+      } catch (pdfError) {
+        console.error("[API] PDF text extraction failed:", pdfError);
+        // Continue without raw text — user can still upload, analysis won't work
+      }
     }
 
     // Upload to Supabase Storage
