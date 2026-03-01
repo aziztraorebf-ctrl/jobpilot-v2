@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/supabase/get-user";
+import { ChatInterface } from "@/components/career-chat/chat-interface";
 
 export default async function CareerChatPage() {
   const t = await getTranslations("careerChat");
@@ -7,10 +8,13 @@ export default async function CareerChatPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-      <h1 className="text-3xl font-bold">{t("title")}</h1>
-      <div className="text-muted-foreground">
-        {t("description")}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground">
+          {t("description")}
+        </p>
       </div>
+      <ChatInterface />
     </div>
   );
 }
