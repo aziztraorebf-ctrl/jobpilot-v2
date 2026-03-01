@@ -63,3 +63,14 @@ export const CoverLetterResponseSchema = z.object({
 });
 
 export type CoverLetterResponse = z.infer<typeof CoverLetterResponseSchema>;
+
+// -- Career Chat Response (AI conversational response for career guidance) --
+export const CareerChatResponseSchema = z.object({
+  message: z.string(),
+  tokens_used: z.number().int().min(0),
+  career_suggestions: z.array(z.string()).optional(),
+  skill_recommendations: z.array(z.string()).optional(),
+  follow_up_prompts: z.array(z.string()).optional(),
+});
+
+export type CareerChatResponse = z.infer<typeof CareerChatResponseSchema>;
