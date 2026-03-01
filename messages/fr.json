@@ -150,6 +150,10 @@
     "untitled": "Sans titre",
     "unknownCompany": "Inconnu"
   },
+  "careerChat": {
+    "title": "Exploration de carriere",
+    "description": "Obtenez des conseils de carriere personnalises avec l'IA"
+  },
   "settings": {
     "title": "Parametres",
     "profile": "Profil",
