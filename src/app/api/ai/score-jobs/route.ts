@@ -28,31 +28,44 @@ export async function POST() {
 
     const cvData = extractCvData(resume.parsed_data as Record<string, unknown>);
 
-    // Fetch jobs that have no score yet for this user+resume
     const supabase = getSupabase();
+
+    // Get already-scored job IDs for this user+resume
+    const { data: existingScores, error: scoresError } = await supabase
+      .from("match_scores")
+      .select("job_listing_id")
+      .eq("user_id", user.id)
+      .eq("resume_id", resume.id);
+
+    if (scoresError) {
+      return NextResponse.json({ error: scoresError.message, scored: 0 }, { status: 500 });
+    }
+
+    const scoredJobIds = new Set((existingScores ?? []).map((r) => r.job_listing_id));
+
+    // Fetch active jobs, then filter out already-scored ones
     const { data: allJobs, error: jobsError } = await supabase
       .from("job_listings")
       .select("id, description, title")
       .eq("is_active", true)
-      .not(
-        "id",
-        "in",
-        `(select job_listing_id from match_scores where user_id = '${user.id}' and resume_id = '${resume.id}')`
-      )
-      .limit(BATCH_SIZE);
+      .limit(BATCH_SIZE + scoredJobIds.size);
 
     if (jobsError) {
       return NextResponse.json({ error: jobsError.message, scored: 0 }, { status: 500 });
     }
 
-    if (!allJobs || allJobs.length === 0) {
+    const jobsToScore = (allJobs ?? [])
+      .filter((j) => !scoredJobIds.has(j.id))
+      .slice(0, BATCH_SIZE);
+
+    if (jobsToScore.length === 0) {
       return NextResponse.json({ scored: 0, newScores: {} });
     }
 
     const newScores: Record<string, number> = {};
     let scored = 0;
 
-    for (const job of allJobs) {
+    for (const job of jobsToScore) {
       if (!job.description) continue;
       try {
         const { score } = await scoreMatch(cvData, job.description);
