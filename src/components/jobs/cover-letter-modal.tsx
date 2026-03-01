@@ -11,7 +11,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { getAuthBrowserClient } from "@/lib/supabase/browser-client";
 
 type Language = "fr" | "en";
@@ -46,13 +45,17 @@ export function CoverLetterModal({
     setError(null);
 
     try {
-      // Fetch primary resume ID
+      // Fetch the most recent analyzed resume (primary first, fallback to any with parsed_data)
       const supabase = getAuthBrowserClient();
-      const { data: resume } = await supabase
+      const { data: resumes } = await supabase
         .from("resumes")
-        .select("id, parsed_data")
-        .eq("is_primary", true)
-        .maybeSingle();
+        .select("id, parsed_data, is_primary")
+        .not("parsed_data", "is", null)
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const resume = resumes?.[0] ?? null;
 
       if (!resume) {
         setError(t("coverLetterNoResume"));
