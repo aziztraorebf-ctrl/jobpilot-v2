@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Write(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Edit(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Glob(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Grep(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Read(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/.auto-claude/specs/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Write(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/.auto-claude/specs/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Edit(/Users/clawdbot/Workspace/jobpilot/.auto-claude/worktrees/tasks/003-replace-pdf-parse-with-unpdf-for-vercel/.auto-claude/specs/003-replace-pdf-parse-with-unpdf-for-vercel/**)",
+      "Read(/Users/clawdbot/Workspace/jobpilot/.auto-claude/**)",
+      "Write(/Users/clawdbot/Workspace/jobpilot/.auto-claude/**)",
+      "Edit(/Users/clawdbot/Workspace/jobpilot/.auto-claude/**)",
+      "Glob(/Users/clawdbot/Workspace/jobpilot/.auto-claude/**)",
+      "Grep(/Users/clawdbot/Workspace/jobpilot/.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__query-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
