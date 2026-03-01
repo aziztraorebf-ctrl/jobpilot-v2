@@ -107,3 +107,28 @@ export async function getScoreForJob(
 
   return data;
 }
+
+/**
+ * Fetch the most recent score for a specific job, regardless of resume.
+ * Returns the latest match_scores row or null if none exists.
+ */
+export async function getLatestScoreForJob(
+  userId: string,
+  jobId: string
+): Promise<ScoreRow | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("match_scores")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("job_listing_id", jobId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch latest score for job: ${error.message}`);
+  }
+
+  return data;
+}

@@ -50,19 +50,13 @@ export async function POST(request: Request) {
           );
         }
         const buffer = Buffer.from(await fileData.arrayBuffer());
-        // Use createRequire + lib subpath:
-        // - avoids pdf-parse@1.x test-file crash at module load (index.js reads a fixture)
-        // - avoids @napi-rs/canvas native binary (was in pdf-parse@2.x)
-        const { createRequire } = await import("module");
-        const req = createRequire(import.meta.url);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pdfParse = req("pdf-parse/lib/pdf-parse.js") as (buf: Buffer) => Promise<{ text: string }>;
-        const result = await pdfParse(buffer);
-        rawText = result.text || "";
+        const { extractText } = await import("unpdf");
+        const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
+        rawText = text || "";
         if (!rawText.trim()) {
           return NextResponse.json(
             { error: "Could not extract text from PDF. Try uploading a .txt version." },
-            { status: 400 }
+            { status: 422 }
           );
         }
         // Persist extracted text so future analyses are instant

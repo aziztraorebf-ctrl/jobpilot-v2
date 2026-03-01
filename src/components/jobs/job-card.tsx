@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Bookmark, ExternalLink, X, MapPin, DollarSign } from "lucide-react";
+import { Bookmark, ExternalLink, X, MapPin, DollarSign, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ interface JobCardProps {
   isSeen?: boolean;
   onBookmark?: (jobId: string) => void;
   onDismiss?: (jobId: string) => void;
+  onScoreClick?: (jobId: string) => void;
+  onCoverLetterClick?: (jobId: string) => void;
 }
 
 function getRelativeDays(dateString: string | null): number | null {
@@ -100,7 +102,7 @@ function getSourceLabel(source: string): string {
   }
 }
 
-export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardProps) {
+export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClick, onCoverLetterClick }: JobCardProps) {
   const t = useTranslations("jobs");
   const jobId = "id" in job ? String((job as Record<string, unknown>).id) : "";
   const days = getRelativeDays(job.posted_at);
@@ -151,6 +153,17 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardPr
             >
               <ExternalLink className="size-4" />
             </Button>
+            {onCoverLetterClick && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("coverLetter")}
+                title={t("coverLetter")}
+                onClick={() => onCoverLetterClick(jobId)}
+              >
+                <FileText className="size-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -182,7 +195,18 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss }: JobCardPr
           )}
 
           {/* Score circle */}
-          <ScoreCircle score={score} size="md" />
+          {score > 0 && onScoreClick ? (
+            <button
+              type="button"
+              className="cursor-pointer"
+              title={t("scoreDetail")}
+              onClick={() => onScoreClick(jobId)}
+            >
+              <ScoreCircle score={score} size="md" />
+            </button>
+          ) : (
+            <ScoreCircle score={score} size="md" />
+          )}
 
           {/* Source badge */}
           <Badge

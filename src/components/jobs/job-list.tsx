@@ -4,6 +4,8 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { JobFilters } from "@/components/jobs/job-filters";
 import { JobCard } from "@/components/jobs/job-card";
+import { ScoreDetailModal } from "@/components/jobs/score-detail-modal";
+import { CoverLetterModal } from "@/components/jobs/cover-letter-modal";
 import { toast } from "sonner";
 import type { JobRow } from "@/lib/supabase/queries";
 
@@ -43,6 +45,19 @@ export function JobList({
   );
 
   const [seenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
+
+  const [scoreModalJob, setScoreModalJob] = useState<{ id: string; title: string } | null>(null);
+  const [coverLetterJob, setCoverLetterJob] = useState<{ id: string; title: string } | null>(null);
+
+  const handleScoreClick = useCallback((jobId: string) => {
+    const job = initialJobs.find((j) => j.id === jobId);
+    if (job) setScoreModalJob({ id: job.id, title: job.title });
+  }, [initialJobs]);
+
+  const handleCoverLetterClick = useCallback((jobId: string) => {
+    const job = initialJobs.find((j) => j.id === jobId);
+    if (job) setCoverLetterJob({ id: job.id, title: job.title });
+  }, [initialJobs]);
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
     setFilters(newFilters);
@@ -166,8 +181,28 @@ export function JobList({
           isSeen={seenIds.has(job.id)}
           onBookmark={handleBookmark}
           onDismiss={handleDismiss}
+          onScoreClick={handleScoreClick}
+          onCoverLetterClick={handleCoverLetterClick}
         />
       ))}
+
+      {scoreModalJob && (
+        <ScoreDetailModal
+          jobId={scoreModalJob.id}
+          jobTitle={scoreModalJob.title}
+          open={true}
+          onClose={() => setScoreModalJob(null)}
+        />
+      )}
+
+      {coverLetterJob && (
+        <CoverLetterModal
+          jobId={coverLetterJob.id}
+          jobTitle={coverLetterJob.title}
+          open={true}
+          onClose={() => setCoverLetterJob(null)}
+        />
+      )}
     </div>
   );
 }
