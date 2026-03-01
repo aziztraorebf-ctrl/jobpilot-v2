@@ -163,6 +163,14 @@
     "saveError": "Failed to save settings",
     "alertThreshold": "Alert threshold",
     "alertThresholdDescription": "Minimum score to trigger an email notification",
-    "notificationConfigured": "Notifications configured"
+    "notificationConfigured": "Notifications configured",
+    "analyzeCV": "Analyze with AI",
+    "analyzing": "Analyzing...",
+    "analyzed": "Analyzed",
+    "notAnalyzed": "Not analyzed",
+    "cvSkills": "Technical skills",
+    "cvExperience": "Experience",
+    "analyzeError": "Analysis failed. Make sure the file contains readable text.",
+    "noRawText": "Cannot analyze this file. Re-upload it or use TXT format."
   }
 }

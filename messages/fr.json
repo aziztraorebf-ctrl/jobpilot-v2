@@ -163,6 +163,14 @@
     "saveError": "Echec de la sauvegarde des parametres",
     "alertThreshold": "Seuil d'alerte",
     "alertThresholdDescription": "Score minimum pour declencher une notification email",
-    "notificationConfigured": "Notifications configurees"
+    "notificationConfigured": "Notifications configurees",
+    "analyzeCV": "Analyser avec l'IA",
+    "analyzing": "Analyse en cours...",
+    "analyzed": "Analyse effectuee",
+    "notAnalyzed": "Non analyse",
+    "cvSkills": "Competences techniques",
+    "cvExperience": "Experience",
+    "analyzeError": "Echec de l'analyse. Verifiez que le fichier contient du texte lisible.",
+    "noRawText": "Impossible d'analyser ce fichier. Rechargez-le ou utilisez un format TXT."
   }
 }
