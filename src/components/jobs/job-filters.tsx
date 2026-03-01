@@ -19,6 +19,7 @@ interface JobFiltersProps {
     source: string;
     remote: string;
     minScore: number;
+    newOnly: boolean;
   }) => void;
 }
 
@@ -29,17 +30,19 @@ export function JobFilters({ onFiltersChange }: JobFiltersProps) {
   const [source, setSource] = useState("all");
   const [remote, setRemote] = useState("all");
   const [minScore, setMinScore] = useState(0);
+  const [newOnly, setNewOnly] = useState(false);
 
   const emitChange = useCallback(
-    (overrides: Partial<{ search: string; source: string; remote: string; minScore: number }>) => {
+    (overrides: Partial<{ search: string; source: string; remote: string; minScore: number; newOnly: boolean }>) => {
       onFiltersChange({
         search: overrides.search ?? search,
         source: overrides.source ?? source,
         remote: overrides.remote ?? remote,
         minScore: overrides.minScore ?? minScore,
+        newOnly: overrides.newOnly ?? newOnly,
       });
     },
-    [onFiltersChange, search, source, remote, minScore]
+    [onFiltersChange, search, source, remote, minScore, newOnly]
   );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,6 +75,11 @@ export function JobFilters({ onFiltersChange }: JobFiltersProps) {
     const score = parseInt(value, 10);
     setMinScore(score);
     emitChange({ minScore: score });
+  }
+
+  function handleNewOnlyChange(checked: boolean) {
+    setNewOnly(checked);
+    emitChange({ newOnly: checked });
   }
 
   return (
@@ -132,6 +140,17 @@ export function JobFilters({ onFiltersChange }: JobFiltersProps) {
           <SelectItem value="80">{t("minScore")}: 80+</SelectItem>
         </SelectContent>
       </Select>
+
+      {/* New Only filter */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          className="size-4 rounded border cursor-pointer"
+          checked={newOnly}
+          onChange={(e) => handleNewOnlyChange(e.target.checked)}
+        />
+        <span className="text-sm">{t("newOnly")}</span>
+      </label>
     </div>
   );
 }

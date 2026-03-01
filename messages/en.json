@@ -61,6 +61,7 @@
     "source": "Source",
     "remote": "Remote",
     "minScore": "Min Score",
+    "newOnly": "New only",
     "allSources": "All Sources",
     "all": "All",
     "remoteYes": "Remote",
