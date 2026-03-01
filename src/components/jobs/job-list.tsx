@@ -14,6 +14,7 @@ interface Filters {
   source: string;
   remote: string;
   minScore: number;
+  newOnly: boolean;
 }
 
 interface JobListProps {
@@ -37,6 +38,7 @@ export function JobList({
     source: "all",
     remote: "all",
     minScore: 0,
+    newOnly: false,
   });
 
   // Build a Set for O(1) dismissed lookups - use state for optimistic updates
@@ -44,7 +46,7 @@ export function JobList({
     () => new Set(initialDismissedIds)
   );
 
-  const [seenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
 
   const [scoreModalJob, setScoreModalJob] = useState<{ id: string; title: string } | null>(null);
   const [coverLetterJob, setCoverLetterJob] = useState<{ id: string; title: string } | null>(null);
@@ -107,6 +109,26 @@ export function JobList({
     }
   }, [t]);
 
+  const handleMarkSeen = useCallback(async (jobId: string) => {
+    if (!jobId) return;
+    setSeenIds((prev) => new Set(prev).add(jobId));
+    try {
+      const res = await fetch("/api/jobs/seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobListingId: jobId }),
+      });
+      if (!res.ok) throw new Error("Mark seen failed");
+    } catch {
+      setSeenIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      toast.error(t("actionFailed"));
+    }
+  }, [t]);
+
   const filteredJobs = useMemo(() => {
     const searchLower = filters.search.toLowerCase();
 
@@ -114,6 +136,11 @@ export function JobList({
       .filter((job) => {
         // Exclude dismissed jobs
         if (dismissedIds.has(job.id)) {
+          return false;
+        }
+
+        // New only filter: exclude seen jobs
+        if (filters.newOnly && seenIds.has(job.id)) {
           return false;
         }
 
@@ -157,7 +184,7 @@ export function JobList({
         const scoreB = initialScoreMap[b.id] ?? 0;
         return scoreB - scoreA;
       });
-  }, [filters, initialJobs, initialScoreMap, dismissedIds]);
+  }, [filters, initialJobs, initialScoreMap, dismissedIds, seenIds]);
 
   return (
     <div className="space-y-4">
@@ -181,6 +208,7 @@ export function JobList({
           isSeen={seenIds.has(job.id)}
           onBookmark={handleBookmark}
           onDismiss={handleDismiss}
+          onMarkSeen={handleMarkSeen}
           onScoreClick={handleScoreClick}
           onCoverLetterClick={handleCoverLetterClick}
         />

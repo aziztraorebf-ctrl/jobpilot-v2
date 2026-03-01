@@ -15,6 +15,7 @@ interface JobCardProps {
   isSeen?: boolean;
   onBookmark?: (jobId: string) => void;
   onDismiss?: (jobId: string) => void;
+  onMarkSeen?: (jobId: string) => void;
   onScoreClick?: (jobId: string) => void;
   onCoverLetterClick?: (jobId: string) => void;
 }
@@ -102,7 +103,7 @@ function getSourceLabel(source: string): string {
   }
 }
 
-export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClick, onCoverLetterClick }: JobCardProps) {
+export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen, onScoreClick, onCoverLetterClick }: JobCardProps) {
   const t = useTranslations("jobs");
   const jobId = "id" in job ? String((job as Record<string, unknown>).id) : "";
   const days = getRelativeDays(job.posted_at);
@@ -113,6 +114,7 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClic
   );
 
   function handleApply() {
+    onMarkSeen?.(jobId);
     if (job.source_url) {
       window.open(job.source_url, "_blank", "noopener,noreferrer");
     }
@@ -127,9 +129,16 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClic
         {/* Top section: title + actions */}
         <div className="flex justify-between items-start gap-4">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold leading-tight truncate">
-              {job.title}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold leading-tight truncate">
+                {job.title}
+              </h3>
+              {!isSeen && (
+                <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 border-transparent shrink-0">
+                  {t("newBadge")}
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               {job.company_name ?? t("unknownCompany")}
             </p>
@@ -140,7 +149,10 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClic
               size="icon"
               aria-label={t("bookmark")}
               title={t("bookmark")}
-              onClick={() => onBookmark?.(jobId)}
+              onClick={() => {
+                onMarkSeen?.(jobId);
+                onBookmark?.(jobId);
+              }}
             >
               <Bookmark className="size-4" />
             </Button>
