@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabase } from "@/lib/supabase/client";
 import { requireUser } from "@/lib/supabase/get-user";
 import { createResume } from "@/lib/supabase/queries";
@@ -94,6 +95,7 @@ export async function POST(request: Request) {
       is_primary: false,
     });
 
+    revalidatePath("/[locale]/(app)/settings", "page");
     return NextResponse.json(resume, { status: 201 });
   } catch (error: unknown) {
     return apiError(error, "POST /api/resumes/upload");

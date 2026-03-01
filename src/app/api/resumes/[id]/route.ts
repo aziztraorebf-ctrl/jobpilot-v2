@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabase } from "@/lib/supabase/client";
 import { getResumeById, deleteResume } from "@/lib/supabase/queries";
 import { requireUser } from "@/lib/supabase/get-user";
@@ -55,6 +56,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     // Delete record from DB
     await deleteResume(user.id, id);
 
+    revalidatePath("/[locale]/(app)/settings", "page");
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return apiError(error, "DELETE /api/resumes/[id]");
