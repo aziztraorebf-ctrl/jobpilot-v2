@@ -43,7 +43,7 @@ describe("getProfilesWithAutoSearch", () => {
     expect(result).toEqual([MOCK_PROFILE_DAILY]);
     expect(mockClient.from).toHaveBeenCalledWith("profiles");
     expect(mockClient.select).toHaveBeenCalledWith("*");
-    expect(mockClient.or).toHaveBeenCalled();
+    // Filtering is done in JS (not via PostgREST .or()) to avoid JSONB operator issues
   });
 
   it("returns empty array when no profiles have auto-search", async () => {
