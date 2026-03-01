@@ -153,7 +153,7 @@ export function ScoreDetailModal({
             </div>
 
             {/* Matching skills */}
-            {data.matching_skills.length > 0 && (
+            {(data.matching_skills?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">
                   {t("scoreMatchingSkills")}
@@ -172,7 +172,7 @@ export function ScoreDetailModal({
             )}
 
             {/* Missing skills */}
-            {data.missing_skills.length > 0 && (
+            {(data.missing_skills?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">
                   {t("scoreMissingSkills")}
@@ -191,7 +191,7 @@ export function ScoreDetailModal({
             )}
 
             {/* Strengths */}
-            {data.strengths.length > 0 && (
+            {(data.strengths?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">{t("scoreStrengths")}</h4>
                 <ul className="space-y-1.5">
@@ -206,7 +206,7 @@ export function ScoreDetailModal({
             )}
 
             {/* Concerns */}
-            {data.concerns.length > 0 && (
+            {(data.concerns?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">{t("scoreConcerns")}</h4>
                 <ul className="space-y-1.5">
