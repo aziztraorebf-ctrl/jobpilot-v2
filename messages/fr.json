@@ -216,6 +216,10 @@
     "cvPresent": "present",
     "cvSkills": "Competences techniques",
     "cvExperience": "Experience",
+    "cvPrimary": "CV principal",
+    "cvSetPrimary": "Definir comme principal",
+    "cvLabelPlaceholder": "Nom du CV (ex: CV Securite)",
+    "cvLabelSaved": "Nom sauvegarde",
     "analyzeError": "Echec de l'analyse. Verifiez que le fichier contient du texte lisible.",
     "noRawText": "Impossible d'analyser ce fichier. Rechargez-le ou utilisez un format TXT."
   }

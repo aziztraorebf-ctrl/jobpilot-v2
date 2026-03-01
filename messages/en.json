@@ -216,6 +216,10 @@
     "cvPresent": "present",
     "cvSkills": "Technical skills",
     "cvExperience": "Experience",
+    "cvPrimary": "Primary CV",
+    "cvSetPrimary": "Set as primary",
+    "cvLabelPlaceholder": "CV name (e.g. Security CV)",
+    "cvLabelSaved": "Name saved",
     "analyzeError": "Analysis failed. Make sure the file contains readable text.",
     "noRawText": "Cannot analyze this file. Re-upload it or use TXT format."
   }
