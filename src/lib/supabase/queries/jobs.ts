@@ -162,6 +162,31 @@ export async function dismissJob(userId: string, jobListingId: string): Promise<
 }
 
 /**
+ * Mark a job as seen for the current user by upserting into seen_jobs
+ * with dismissed=false.
+ *
+ * Uses a single .upsert() call with the UNIQUE constraint on
+ * (user_id, job_listing_id) to insert or update in one round-trip.
+ */
+export async function markJobSeen(userId: string, jobListingId: string): Promise<void> {
+  if (!jobListingId) {
+    throw new Error("jobListingId is required");
+  }
+
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("seen_jobs")
+    .upsert(
+      { user_id: userId, job_listing_id: jobListingId, dismissed: false },
+      { onConflict: "user_id,job_listing_id" }
+    );
+
+  if (error) {
+    throw new Error(`Failed to mark job as seen: ${error.message}`);
+  }
+}
+
+/**
  * Get all dismissed job listing IDs for the current user.
  * Returns an array of job_listing_id strings.
  */
