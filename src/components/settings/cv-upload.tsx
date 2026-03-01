@@ -2,10 +2,16 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Upload, FileText, Trash2, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import {
+  Upload, FileText, Trash2, Loader2, Sparkles, CheckCircle2,
+  Eye, User, Brain, Briefcase, GraduationCap, Globe, Info,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { ResumeRow } from "@/lib/supabase/queries";
 import type { ParsedResume } from "@/lib/schemas/ai-responses";
@@ -33,6 +39,153 @@ function getParsedData(resume: ResumeRow): ParsedResume | null {
   return d as unknown as ParsedResume;
 }
 
+interface ParsedProfileModalProps {
+  resume: ResumeRow;
+  parsed: ParsedResume;
+  open: boolean;
+  onClose: () => void;
+}
+
+function ParsedProfileModal({ resume, parsed, open, onClose }: ParsedProfileModalProps) {
+  const t = useTranslations("settings");
+
+  const allSkills = [
+    ...(parsed.skills?.technical ?? []),
+    ...(parsed.skills?.soft ?? []),
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary shrink-0" />
+            {resume.file_name}
+          </DialogTitle>
+          <DialogDescription asChild>
+            <div className="flex items-start gap-2 rounded-md bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-muted-foreground mt-1">
+              <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+              <span>{t("cvProfileUsageNote")}</span>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 pt-1">
+          {/* Personal info */}
+          {parsed.personal && (
+            <section>
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                <User className="h-3.5 w-3.5" />
+                {t("cvPersonal")}
+              </h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                {parsed.personal.name && (
+                  <div><span className="text-muted-foreground text-xs">{t("cvName")}</span><p className="font-medium">{parsed.personal.name}</p></div>
+                )}
+                {parsed.personal.location && (
+                  <div><span className="text-muted-foreground text-xs">{t("cvLocation")}</span><p>{parsed.personal.location}</p></div>
+                )}
+                {parsed.personal.email && (
+                  <div><span className="text-muted-foreground text-xs">{t("cvEmail")}</span><p>{parsed.personal.email}</p></div>
+                )}
+                {parsed.personal.phone && (
+                  <div><span className="text-muted-foreground text-xs">{t("cvPhone")}</span><p>{parsed.personal.phone}</p></div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Summary */}
+          {parsed.summary && (
+            <section>
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                <Brain className="h-3.5 w-3.5" />
+                {t("cvSummary")}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{parsed.summary}</p>
+            </section>
+          )}
+
+          {/* Skills */}
+          {(allSkills.length > 0 || (parsed.skills?.languages?.length ?? 0) > 0) && (
+            <section>
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                <Sparkles className="h-3.5 w-3.5" />
+                {t("cvSkillsAll")}
+              </h3>
+              <div className="space-y-2">
+                {allSkills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {allSkills.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+                    ))}
+                  </div>
+                )}
+                {(parsed.skills?.languages?.length ?? 0) > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    {parsed.skills.languages.map((lang) => (
+                      <Badge key={lang} variant="outline" className="text-xs">{lang}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Experience */}
+          {parsed.experience?.length > 0 && (
+            <section>
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                <Briefcase className="h-3.5 w-3.5" />
+                {t("cvExperience")} ({parsed.experience.length})
+              </h3>
+              <div className="space-y-3">
+                {parsed.experience.map((exp, i) => (
+                  <div key={i} className="border-l-2 border-primary/20 pl-3">
+                    <p className="text-sm font-medium">{exp.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {exp.company}
+                      {exp.start_date && ` · ${exp.start_date}`}
+                      {exp.end_date ? ` — ${exp.end_date}` : exp.start_date ? ` — ${t("cvPresent")}` : ""}
+                    </p>
+                    {exp.description && (
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{exp.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Education */}
+          {parsed.education?.length > 0 && (
+            <section>
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                <GraduationCap className="h-3.5 w-3.5" />
+                {t("cvEducation")}
+              </h3>
+              <div className="space-y-1.5">
+                {parsed.education.map((edu, i) => (
+                  <div key={i} className="text-sm">
+                    <span className="font-medium">{edu.degree}</span>
+                    {edu.institution && edu.institution !== "Non spécifié" && (
+                      <span className="text-muted-foreground"> · {edu.institution}</span>
+                    )}
+                    {edu.year && edu.year !== "Non spécifié" && (
+                      <span className="text-xs text-muted-foreground"> ({edu.year})</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
   const t = useTranslations("settings");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +195,7 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewingResumeId, setViewingResumeId] = useState<string | null>(null);
 
   const handleUpload = useCallback(async (file: File) => {
     setError(null);
@@ -104,6 +258,8 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
       setResumes((prev) =>
         prev.map((r) => (r.id === resume.id ? { ...r, parsed_data: parsed } : r))
       );
+      // Auto-open modal after analysis so user immediately sees what was extracted
+      setViewingResumeId(resume.id);
     } catch {
       setError(t("analyzeError"));
     } finally {
@@ -128,6 +284,11 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
       setDeletingId(null);
     }
   }, []);
+
+  const viewingResume = viewingResumeId
+    ? resumes.find((r) => r.id === viewingResumeId) ?? null
+    : null;
+  const viewingParsed = viewingResume ? getParsedData(viewingResume) : null;
 
   return (
     <Card>
@@ -174,8 +335,7 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
               const isAnalyzing = analyzingId === resume.id;
 
               return (
-                <div key={resume.id} className="rounded-lg border p-4 space-y-3">
-                  {/* Header row */}
+                <div key={resume.id} className="rounded-lg border p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <FileText className="h-8 w-8 shrink-0 text-primary" />
@@ -203,7 +363,18 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {!isAnalyzed && (
+                      {isAnalyzed ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setViewingResumeId(resume.id)}
+                          className="gap-1 text-xs"
+                        >
+                          <Eye className="h-3 w-3" />
+                          {t("cvViewProfile")}
+                        </Button>
+                      ) : (
                         <Button
                           type="button"
                           variant="outline"
@@ -237,51 +408,6 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
                       </Button>
                     </div>
                   </div>
-
-                  {/* Parsed data panel */}
-                  {isAnalyzed && parsed && (
-                    <div className="rounded-md bg-muted/50 p-3 space-y-2 text-sm">
-                      {parsed.summary && (
-                        <p className="text-muted-foreground italic text-xs leading-relaxed">
-                          {parsed.summary.length > 200
-                            ? parsed.summary.slice(0, 200) + "…"
-                            : parsed.summary}
-                        </p>
-                      )}
-                      {parsed.skills?.technical?.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-foreground mb-1">{t("cvSkills")}</p>
-                          <div className="flex flex-wrap gap-1">
-                            {parsed.skills.technical.slice(0, 12).map((skill) => (
-                              <Badge key={skill} variant="secondary" className="text-xs">
-                                {skill}
-                              </Badge>
-                            ))}
-                            {parsed.skills.technical.length > 12 && (
-                              <Badge variant="outline" className="text-xs text-muted-foreground">
-                                +{parsed.skills.technical.length - 12}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {parsed.experience?.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-foreground mb-1">
-                            {t("cvExperience")} ({parsed.experience.length})
-                          </p>
-                          <ul className="space-y-0.5">
-                            {parsed.experience.slice(0, 3).map((exp, i) => (
-                              <li key={i} className="text-xs text-muted-foreground">
-                                {exp.title} · {exp.company}
-                                {exp.end_date === null ? " (actuel)" : ""}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -299,6 +425,16 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
           className="hidden"
         />
       </CardContent>
+
+      {/* Parsed profile modal */}
+      {viewingResume && viewingParsed && (
+        <ParsedProfileModal
+          resume={viewingResume}
+          parsed={viewingParsed}
+          open={viewingResumeId !== null}
+          onClose={() => setViewingResumeId(null)}
+        />
+      )}
     </Card>
   );
 }
