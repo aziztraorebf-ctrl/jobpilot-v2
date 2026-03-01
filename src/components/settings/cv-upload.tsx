@@ -87,10 +87,6 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
   }, [t]);
 
   const handleAnalyze = useCallback(async (resume: ResumeRow) => {
-    if (!resume.raw_text) {
-      setError(t("noRawText"));
-      return;
-    }
     setError(null);
     setAnalyzingId(resume.id);
     try {
@@ -213,8 +209,8 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleAnalyze(resume)}
-                          disabled={isAnalyzing || !resume.raw_text}
-                          title={!resume.raw_text ? t("noRawText") : undefined}
+                          disabled={isAnalyzing || resume.file_type === "docx"}
+                          title={resume.file_type === "docx" ? t("noRawText") : undefined}
                           className="gap-1 text-xs"
                         >
                           {isAnalyzing ? (

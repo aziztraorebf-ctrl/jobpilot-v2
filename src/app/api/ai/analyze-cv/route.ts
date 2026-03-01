@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/get-user";
+import { getSupabase } from "@/lib/supabase/client";
 import { getResumeById, updateResume } from "@/lib/supabase/queries";
 import { parseCvText } from "@/lib/services/cv-parser";
 import type { Json } from "@/types/database";
@@ -33,13 +34,42 @@ export async function POST(request: Request) {
       if (!resume) {
         return NextResponse.json({ error: "Resume not found" }, { status: 404 });
       }
-      if (!resume.raw_text) {
+
+      if (resume.raw_text) {
+        rawText = resume.raw_text;
+      } else if (resume.file_type === "pdf") {
+        // Download PDF from Storage and extract text on-demand
+        const supabase = getSupabase();
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from("resumes")
+          .download(resume.file_path);
+        if (downloadError || !fileData) {
+          return NextResponse.json(
+            { error: "Could not download PDF from storage." },
+            { status: 500 }
+          );
+        }
+        const buffer = Buffer.from(await fileData.arrayBuffer());
+        // Dynamic import to avoid bundling native deps (@napi-rs/canvas) at startup
+        const { PDFParse } = await import("pdf-parse");
+        const parser = new PDFParse({ data: buffer });
+        const result = await parser.getText();
+        await parser.destroy();
+        rawText = result.text || "";
+        if (!rawText.trim()) {
+          return NextResponse.json(
+            { error: "Could not extract text from PDF. Try uploading a .txt version." },
+            { status: 400 }
+          );
+        }
+        // Persist extracted text so future analyses are instant
+        await updateResume(user.id, resumeId, { raw_text: rawText });
+      } else {
         return NextResponse.json(
-          { error: "Resume has no raw text. Upload a .txt file or re-parse." },
+          { error: "No text available for this resume. Re-upload as a .txt file." },
           { status: 400 }
         );
       }
-      rawText = resume.raw_text;
     } else {
       rawText = body.rawText;
     }
