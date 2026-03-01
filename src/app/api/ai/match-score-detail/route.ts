@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
 
     const score = await getLatestScoreForJob(user.id, jobId);
 
-    return NextResponse.json({ score });
+    if (!score) {
+      return NextResponse.json(null);
+    }
+
+    return NextResponse.json(score);
   } catch (error: unknown) {
     return apiError(error, "GET /api/ai/match-score-detail");
   }
