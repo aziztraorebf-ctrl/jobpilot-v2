@@ -103,7 +103,7 @@ function getSourceLabel(source: string): string {
   }
 }
 
-export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClick, onCoverLetterClick }: JobCardProps) {
+export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen, onScoreClick, onCoverLetterClick }: JobCardProps) {
   const t = useTranslations("jobs");
   const jobId = "id" in job ? String((job as Record<string, unknown>).id) : "";
   const days = getRelativeDays(job.posted_at);
@@ -114,6 +114,7 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClic
   );
 
   function handleApply() {
+    onMarkSeen?.(jobId);
     if (job.source_url) {
       window.open(job.source_url, "_blank", "noopener,noreferrer");
     }
@@ -148,7 +149,10 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onScoreClic
               size="icon"
               aria-label={t("bookmark")}
               title={t("bookmark")}
-              onClick={() => onBookmark?.(jobId)}
+              onClick={() => {
+                onMarkSeen?.(jobId);
+                onBookmark?.(jobId);
+              }}
             >
               <Bookmark className="size-4" />
             </Button>
