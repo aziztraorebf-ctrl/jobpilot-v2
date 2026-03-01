@@ -152,7 +152,16 @@
   },
   "careerChat": {
     "title": "Career Exploration",
-    "description": "Get personalized career guidance powered by AI"
+    "description": "Get personalized career guidance powered by AI",
+    "placeholder": "Ask me about career paths, skills, or job market insights...",
+    "send": "Send",
+    "typing": "AI is typing...",
+    "welcome": "Hi! I'm your AI career advisor. I can help you explore career paths, identify skills to develop, understand job market trends, and plan your professional growth. What would you like to know?",
+    "errorLoading": "Failed to load conversation. Please try again.",
+    "errorSending": "Failed to send message. Please try again.",
+    "tokenUsage": "Token usage",
+    "tokenLimit": "Token limit reached. Start a new conversation to continue.",
+    "conversationHistory": "Conversation History"
   },
   "settings": {
     "title": "Settings",
