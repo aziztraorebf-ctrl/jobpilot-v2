@@ -64,6 +64,134 @@ L'API `/api/ai/cover-letter` existe mais n'est pas accessible dans l'UI. Feature
 
 ---
 
+### [UX-4] Modale de détail du score IA par offre (cercle cliquable)
+**Priorité :** Haute — feature AutoCloud prête à implémenter
+**Signalé :** 2026-02-28
+
+#### Contexte
+
+Chaque job card affiche un `ScoreCircle` (cercle SVG avec le score global). Les données détaillées du score sont déjà sauvegardées en DB dans `match_scores` mais jamais affichées. Un utilisateur en reconversion ne sait pas pourquoi son score est bas, ni quels gaps combler.
+
+#### Ce qu'il faut construire
+
+**1. Route API : `GET /api/ai/match-score?jobId=<uuid>`**
+
+- Authentification via `requireUser()`
+- Récupère dans `match_scores` la ligne correspondant à `user_id + job_listing_id` (le plus récent si plusieurs)
+- Retourne : `{ overall_score, skill_match_score, experience_match_score, education_match_score, explanation, matching_skills, missing_skills, strengths, concerns }` ou `null` si pas de score
+- Utiliser `getSupabase()` et la query existante `getScoreForJob` dans `src/lib/supabase/queries/scores.ts` — mais cette fonction prend aussi `resumeId`. Adapter : récupérer le score le plus récent pour `user_id + job_listing_id` sans filtrer sur `resume_id`.
+
+**2. Composant `ScoreDetailModal`**
+
+Fichier : `src/components/jobs/score-detail-modal.tsx`
+
+- Dialog shadcn/ui (`src/components/ui/dialog.tsx` existe)
+- Props : `jobId: string`, `jobTitle: string`, `open: boolean`, `onClose: () => void`
+- Au mount (quand `open` passe à `true`) : fetch `GET /api/ai/match-score?jobId=...`
+- Affiche un spinner pendant le chargement
+- Si pas de score : message "Aucun score disponible pour cette offre. Cliquez sur Scorer avec l'IA depuis la liste des offres."
+
+**Contenu de la modale quand score disponible :**
+
+```
+[Titre du poste]
+Score global : [ScoreCircle lg] — [explication en texte complet]
+
+Sous-scores :
+  Compétences     [barre de progression] XX%
+  Expérience      [barre de progression] XX%
+  Formation       [barre de progression] XX%
+
+Compétences correspondantes : [badges verts]
+Compétences manquantes :      [badges rouges]
+
+Points forts :        [liste avec checkmark vert]
+Points de vigilance : [liste avec triangle orange]
+```
+
+- Utiliser `Progress` de shadcn/ui si disponible, sinon une `<div>` avec `style={{ width: X% }}`
+- Badges : `<Badge>` de `src/components/ui/badge.tsx`
+- Pas de bouton "Rescorer", pas de lien vers Settings
+
+**3. Rendre `ScoreCircle` cliquable dans `JobCard`**
+
+Fichier : `src/components/jobs/job-card.tsx`
+
+- Ajouter props `onScoreClick?: (jobId: string) => void` à `JobCardProps`
+- Wrapper le `<ScoreCircle>` dans un `<button>` avec `onClick={() => onScoreClick?.(jobId)}` uniquement si `score > 0`
+- Si `score === 0` : le cercle reste non-cliquable (pas encore scoré)
+- Cursor pointer + `title="Voir le détail du score"`
+
+**4. Connecter dans `JobList`**
+
+Fichier : `src/components/jobs/job-list.tsx`
+
+- Ajouter state : `const [scoreModalJob, setScoreModalJob] = useState<{ id: string; title: string } | null>(null)`
+- Passer `onScoreClick={(jobId) => setScoreModalJob({ id: jobId, title: job.title })}` à chaque `JobCard`
+- Rendre `<ScoreDetailModal>` en bas du composant
+
+#### Données réelles disponibles en DB (exemple)
+
+```json
+{
+  "overall_score": 15,
+  "skill_match_score": 10,
+  "experience_match_score": 20,
+  "education_match_score": 10,
+  "explanation": "Le candidat possède une solide expérience en coordination mais n'a pas d'expérience directe en développement logiciel...",
+  "matching_skills": ["Coordination", "Communication"],
+  "missing_skills": ["C, C++, Java, Python", "React, TypeScript", "GitLab"],
+  "strengths": ["Professionnel fiable", "Expérience en environnement à forte fréquentation"],
+  "concerns": ["Aucune expérience en développement logiciel", "Manque de formation en informatique"]
+}
+```
+
+#### Fichiers clés à lire avant d'implémenter
+
+- `src/components/ui/score-circle.tsx` — le composant SVG existant
+- `src/components/jobs/job-card.tsx` — où ajouter `onScoreClick`
+- `src/components/jobs/job-list.tsx` — où gérer le state de la modale
+- `src/lib/supabase/queries/scores.ts` — `getScoreForJob`, `getScoreMap`
+- `src/app/api/ai/match-score/route.ts` — route POST existante (créer GET séparé)
+- `messages/fr.json` et `messages/en.json` — ajouter les clés i18n sous `"jobs"`
+
+#### Traductions à ajouter (fr/en)
+
+```json
+// fr
+"scoreDetail": "Détail du score",
+"scoreSubSkills": "Compétences",
+"scoreSubExperience": "Expérience",
+"scoreSubEducation": "Formation",
+"scoreMatchingSkills": "Compétences correspondantes",
+"scoreMissingSkills": "Compétences manquantes",
+"scoreStrengths": "Points forts",
+"scoreConcerns": "Points de vigilance",
+"scoreNotAvailable": "Aucun score disponible. Cliquez sur \"Scorer avec l'IA\" depuis la liste des offres.",
+"scoreLoading": "Chargement du score..."
+
+// en
+"scoreDetail": "Score breakdown",
+"scoreSubSkills": "Skills",
+"scoreSubExperience": "Experience",
+"scoreSubEducation": "Education",
+"scoreMatchingSkills": "Matching skills",
+"scoreMissingSkills": "Missing skills",
+"scoreStrengths": "Strengths",
+"scoreConcerns": "Concerns",
+"scoreNotAvailable": "No score available. Click \"Score with AI\" from the job list.",
+"scoreLoading": "Loading score..."
+```
+
+#### Contraintes
+
+- Pas d'édition, pas de rescoring depuis la modale
+- Pas de lien vers Settings CV
+- Mobile-first : la modale doit être lisible sur 375px de large
+- Aucune nouvelle dépendance npm
+
+---
+
 ### [UX-1] Assistant IA conversationnel pour l'exploration de carrière
 **Priorité :** Basse (feature complexe)
 **Signalé :** 2026-02-28
