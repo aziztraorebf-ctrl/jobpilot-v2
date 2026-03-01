@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/get-user";
 import { getSupabase } from "@/lib/supabase/client";
-import { getPrimaryResume } from "@/lib/supabase/queries/resumes";
+import { getPrimaryResume, getResumes } from "@/lib/supabase/queries/resumes";
 import { upsertScore } from "@/lib/supabase/queries/scores";
 import { scoreMatch } from "@/lib/services/match-scorer";
 import { extractCvData } from "@/lib/api/ai-route-helpers";
@@ -13,7 +13,12 @@ export async function POST() {
   try {
     const user = await requireUser();
 
-    const resume = await getPrimaryResume(user.id);
+    // Use primary resume, falling back to the most recent analyzed resume
+    let resume = await getPrimaryResume(user.id);
+    if (!resume) {
+      const all = await getResumes(user.id);
+      resume = all.find((r) => r.parsed_data !== null) ?? null;
+    }
     if (!resume) {
       return NextResponse.json({ error: "NO_RESUME", scored: 0 }, { status: 400 });
     }
