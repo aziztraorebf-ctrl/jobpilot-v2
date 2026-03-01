@@ -50,11 +50,14 @@ export async function POST(request: Request) {
           );
         }
         const buffer = Buffer.from(await fileData.arrayBuffer());
-        // Dynamic import to avoid bundling native deps (@napi-rs/canvas) at startup
-        const { PDFParse } = await import("pdf-parse");
-        const parser = new PDFParse({ data: buffer });
-        const result = await parser.getText();
-        await parser.destroy();
+        // Use createRequire + lib subpath:
+        // - avoids pdf-parse@1.x test-file crash at module load (index.js reads a fixture)
+        // - avoids @napi-rs/canvas native binary (was in pdf-parse@2.x)
+        const { createRequire } = await import("module");
+        const req = createRequire(import.meta.url);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pdfParse = req("pdf-parse/lib/pdf-parse.js") as (buf: Buffer) => Promise<{ text: string }>;
+        const result = await pdfParse(buffer);
         rawText = result.text || "";
         if (!rawText.trim()) {
           return NextResponse.json(
