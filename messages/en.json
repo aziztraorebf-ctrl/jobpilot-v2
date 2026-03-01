@@ -62,6 +62,7 @@
     "remote": "Remote",
     "minScore": "Min Score",
     "newOnly": "New only",
+    "filterNewOnly": "Show new jobs only",
     "allSources": "All Sources",
     "all": "All",
     "remoteYes": "Remote",

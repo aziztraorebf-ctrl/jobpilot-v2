@@ -62,6 +62,7 @@
     "remote": "Teletravail",
     "minScore": "Score minimum",
     "newOnly": "Nouveaux seulement",
+    "filterNewOnly": "Afficher les nouvelles offres seulement",
     "allSources": "Toutes les sources",
     "all": "Tous",
     "remoteYes": "Teletravail",
