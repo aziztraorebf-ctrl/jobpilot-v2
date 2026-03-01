@@ -13,6 +13,7 @@
     "dashboard": "Dashboard",
     "jobs": "Jobs",
     "applications": "Applications",
+    "careerChat": "Career Chat",
     "settings": "Settings"
   },
   "auth": {

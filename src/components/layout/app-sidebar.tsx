@@ -10,11 +10,12 @@ import {
   Settings,
   Compass,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
-  labelKey: "dashboard" | "jobs" | "applications" | "settings";
+  labelKey: "dashboard" | "jobs" | "applications" | "careerChat" | "settings";
   icon: React.ComponentType<{ className?: string }>;
   href: string;
 }
@@ -35,6 +36,11 @@ function getNavItems(locale: string): NavItem[] {
       labelKey: "applications",
       icon: FileText,
       href: `/${locale}/applications`,
+    },
+    {
+      labelKey: "careerChat",
+      icon: MessageSquare,
+      href: `/${locale}/career-chat`,
     },
     {
       labelKey: "settings",
