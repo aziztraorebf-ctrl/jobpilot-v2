@@ -7,7 +7,7 @@ import { JobList } from "@/components/jobs/job-list";
 import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
 import type { JobRow } from "@/lib/supabase/queries";
 import { toast } from "sonner";
-import { RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCw, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface JobsPageClientProps {
@@ -35,6 +35,8 @@ export function JobsPageClient({
   const [dismissedIds, setDismissedIds] = useState<string[]>(initialDismissedIds);
   const [remaining, setRemaining] = useState(initialRemainingSearches);
   const [isSearching, setIsSearching] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
+  const [scoreMap, setScoreMap] = useState<Record<string, number>>(initialScoreMap);
 
   // Called when a job is dismissed from the active list
   const handleJobDismissed = useCallback((jobId: string, job: JobRow) => {
@@ -76,25 +78,71 @@ export function JobsPageClient({
     }
   }, [t]);
 
+  const handleScoreJobs = useCallback(async () => {
+    setIsScoring(true);
+    try {
+      const res = await fetch("/api/ai/score-jobs", { method: "POST" });
+      const body = await res.json();
+      if (res.status === 400 && body.error === "NO_RESUME") {
+        toast.error(t("scoreNoResume"));
+        return;
+      }
+      if (res.status === 400 && body.error === "RESUME_NOT_ANALYZED") {
+        toast.error(t("scoreResumeNotAnalyzed"));
+        return;
+      }
+      if (!res.ok) {
+        toast.error(t("actionFailed"));
+        return;
+      }
+      if (body.scored === 0) {
+        toast.info(t("scoreAllDone"));
+        return;
+      }
+      setScoreMap((prev) => ({ ...prev, ...body.newScores }));
+      toast.success(t("scoreDone", { count: body.scored }));
+    } catch {
+      toast.error(t("actionFailed"));
+    } finally {
+      setIsScoring(false);
+    }
+  }, [t]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">{title}</h1>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleManualSearch}
-            disabled={isSearching || remaining === 0}
-            className="gap-2"
-          >
-            {isSearching ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            {isSearching ? t("searching") : t("searchNow")}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleScoreJobs}
+              disabled={isScoring || isSearching}
+              className="gap-2"
+            >
+              {isScoring ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {isScoring ? t("scoring") : t("scoreNow")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualSearch}
+              disabled={isSearching || isScoring || remaining === 0}
+              className="gap-2"
+            >
+              {isSearching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {isSearching ? t("searching") : t("searchNow")}
+            </Button>
+          </div>
           <span className="text-xs text-muted-foreground">
             {t("remainingSearches", { count: remaining })}
           </span>
@@ -110,7 +158,7 @@ export function JobsPageClient({
         <TabsContent value="active" className="mt-4">
           <JobList
             initialJobs={initialJobs}
-            initialScoreMap={initialScoreMap}
+            initialScoreMap={scoreMap}
             initialDismissedIds={dismissedIds}
             initialSeenIds={initialSeenIds}
             onJobDismissed={handleJobDismissed}

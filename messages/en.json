@@ -94,6 +94,12 @@
     "searchNow": "Search now",
     "searching": "Searching...",
     "searchDone": "{count} new job(s) found",
+    "scoreNow": "Score with AI",
+    "scoring": "Scoring...",
+    "scoreDone": "{count} job(s) scored",
+    "scoreAllDone": "All jobs already have a score.",
+    "scoreNoResume": "Upload a resume in Settings > CV to score jobs.",
+    "scoreResumeNotAnalyzed": "Analyze your resume with AI before scoring jobs.",
     "searchLimitReached": "Limit reached (3/day). Try again tomorrow.",
     "searchNoKeywords": "Configure keywords in Search Preferences first.",
     "remainingSearches": "{count} search(es) remaining today"

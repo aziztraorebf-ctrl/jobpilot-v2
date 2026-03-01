@@ -94,6 +94,12 @@
     "searchNow": "Rechercher maintenant",
     "searching": "Recherche en cours...",
     "searchDone": "{count} nouvelle(s) offre(s) trouvee(s)",
+    "scoreNow": "Scorer avec l'IA",
+    "scoring": "Scoring en cours...",
+    "scoreDone": "{count} offre(s) scoree(s)",
+    "scoreAllDone": "Toutes les offres ont deja un score.",
+    "scoreNoResume": "Uploadez un CV dans Parametres > CV pour scorer les offres.",
+    "scoreResumeNotAnalyzed": "Analysez votre CV avec l'IA avant de scorer les offres.",
     "searchLimitReached": "Limite atteinte (3/jour). Reessayez demain.",
     "searchNoKeywords": "Configurez des mots-cles dans les Preferences de recherche.",
     "remainingSearches": "{count} recherche(s) restante(s) aujourd'hui"
