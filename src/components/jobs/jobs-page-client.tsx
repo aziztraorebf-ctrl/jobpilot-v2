@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobList } from "@/components/jobs/job-list";
 import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
 import type { JobRow } from "@/lib/supabase/queries";
+import { toast } from "sonner";
+import { RefreshCw, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface JobsPageClientProps {
   initialJobs: JobRow[];
@@ -14,6 +17,7 @@ interface JobsPageClientProps {
   initialDismissedJobs: JobRow[];
   initialSeenIds: string[];
   title: string;
+  initialRemainingSearches: number;
 }
 
 export function JobsPageClient({
@@ -23,11 +27,14 @@ export function JobsPageClient({
   initialDismissedJobs,
   initialSeenIds,
   title,
+  initialRemainingSearches,
 }: JobsPageClientProps) {
   const t = useTranslations("jobs");
 
   const [dismissedJobs, setDismissedJobs] = useState<JobRow[]>(initialDismissedJobs);
   const [dismissedIds, setDismissedIds] = useState<string[]>(initialDismissedIds);
+  const [remaining, setRemaining] = useState(initialRemainingSearches);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Called when a job is dismissed from the active list
   const handleJobDismissed = useCallback((jobId: string, job: JobRow) => {
@@ -41,9 +48,58 @@ export function JobsPageClient({
     setDismissedJobs((prev) => prev.filter((j) => j.id !== jobId));
   }, []);
 
+  const handleManualSearch = useCallback(async () => {
+    setIsSearching(true);
+    try {
+      const res = await fetch("/api/jobs/manual-search", { method: "POST" });
+      const body = await res.json();
+      if (res.status === 429) {
+        toast.error(t("searchLimitReached"));
+        setRemaining(0);
+        return;
+      }
+      if (res.status === 400 && body.error === "NO_KEYWORDS") {
+        toast.error(t("searchNoKeywords"));
+        return;
+      }
+      if (!res.ok) {
+        toast.error(t("actionFailed"));
+        return;
+      }
+      setRemaining(body.remaining);
+      toast.success(t("searchDone", { count: body.fetched }));
+      window.location.reload();
+    } catch {
+      toast.error(t("actionFailed"));
+    } finally {
+      setIsSearching(false);
+    }
+  }, [t]);
+
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">{title}</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold">{title}</h1>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualSearch}
+            disabled={isSearching || remaining === 0}
+            className="gap-2"
+          >
+            {isSearching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {isSearching ? t("searching") : t("searchNow")}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {t("remainingSearches", { count: remaining })}
+          </span>
+        </div>
+      </div>
       <Tabs defaultValue="active">
         <TabsList>
           <TabsTrigger value="active">{t("active")}</TabsTrigger>

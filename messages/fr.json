@@ -90,7 +90,13 @@
     "hybrid": "Hybride",
     "onsite": "Sur site",
     "unknown": "Inconnu",
-    "unknownCompany": "Entreprise inconnue"
+    "unknownCompany": "Entreprise inconnue",
+    "searchNow": "Rechercher maintenant",
+    "searching": "Recherche en cours...",
+    "searchDone": "{count} nouvelle(s) offre(s) trouvee(s)",
+    "searchLimitReached": "Limite atteinte (3/jour). Reessayez demain.",
+    "searchNoKeywords": "Configurez des mots-cles dans les Preferences de recherche.",
+    "remainingSearches": "{count} recherche(s) restante(s) aujourd'hui"
   },
   "applications": {
     "title": "Pipeline de candidatures",

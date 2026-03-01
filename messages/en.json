@@ -90,7 +90,13 @@
     "hybrid": "Hybrid",
     "onsite": "On-site",
     "unknown": "Unknown",
-    "unknownCompany": "Unknown Company"
+    "unknownCompany": "Unknown Company",
+    "searchNow": "Search now",
+    "searching": "Searching...",
+    "searchDone": "{count} new job(s) found",
+    "searchLimitReached": "Limit reached (3/day). Try again tomorrow.",
+    "searchNoKeywords": "Configure keywords in Search Preferences first.",
+    "remainingSearches": "{count} search(es) remaining today"
   },
   "applications": {
     "title": "Application Pipeline",

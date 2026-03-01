@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { JobsPageClient } from "@/components/jobs/jobs-page-client";
-import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs, getSeenJobIds } from "@/lib/supabase/queries";
+import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs, getSeenJobIds, getManualSearchStatus } from "@/lib/supabase/queries";
 import { requireUser } from "@/lib/supabase/get-user";
 
 export default async function JobsPage() {
@@ -31,6 +31,14 @@ export default async function JobsPage() {
     console.error("[JobsPage] Failed to fetch scores:", error);
   }
 
+  let remainingSearches = 3;
+  try {
+    const searchStatus = await getManualSearchStatus(user.id);
+    remainingSearches = searchStatus.remaining;
+  } catch {
+    // default to 3 on error
+  }
+
   return (
     <JobsPageClient
       initialJobs={jobs}
@@ -39,6 +47,7 @@ export default async function JobsPage() {
       initialDismissedJobs={dismissedJobs}
       initialSeenIds={seenIds}
       title={t("title")}
+      initialRemainingSearches={remainingSearches}
     />
   );
 }
