@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Bot, User } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 import { cn } from "@/lib/utils"
 
@@ -105,9 +106,15 @@ function MessageBubble({ message }: { message: Message }) {
             : "rounded-tl-sm bg-muted"
         )}
       >
-        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-          {message.content}
-        </div>
+        {isUser ? (
+          <div className="break-words text-sm leading-relaxed">
+            {message.content}
+          </div>
+        ) : (
+          <div className="break-words text-sm leading-relaxed [&_h1]:text-base [&_h1]:font-semibold [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1 [&_strong]:font-semibold [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
+        )}
         {message.created_at && (
           <time
             className={cn(
