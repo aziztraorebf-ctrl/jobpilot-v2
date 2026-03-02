@@ -130,7 +130,13 @@
     "tone_professional": "Professional",
     "tone_enthusiastic": "Enthusiastic",
     "tone_creative": "Creative",
-    "tone_formal": "Formal"
+    "tone_formal": "Formal",
+    "trustBadgeVerified": "Verified from your resume",
+    "trustBadgeReview": "Review recommended",
+    "trustBadgeTooltip": "This cover letter was generated using only information from your resume and the job description. Always review before sending.",
+    "coverLetterSaved": "Cover letter saved",
+    "coverLetterDownloadTxt": "Download TXT",
+    "coverLetterDownloadDocx": "Download DOCX"
   },
   "applications": {
     "title": "Application Pipeline",

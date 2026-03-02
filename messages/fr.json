@@ -125,12 +125,18 @@
     "coverLetterRegenerate": "Regenerer",
     "coverLetterCopy": "Copier",
     "coverLetterCopied": "Copie !",
-    "coverLetterNoResume": "Uploadez un CV pour generer une lettre de motivation.",
-    "coverLetterError": "Echec de la generation de la lettre de motivation.",
+    "coverLetterNoResume": "Uploadez un CV pour générer une lettre de motivation.",
+    "coverLetterError": "Échec de la génération de la lettre de motivation.",
     "tone_professional": "Professionnel",
     "tone_enthusiastic": "Enthousiaste",
-    "tone_creative": "Creatif",
-    "tone_formal": "Formel"
+    "tone_creative": "Créatif",
+    "tone_formal": "Formel",
+    "trustBadgeVerified": "Vérifié depuis votre CV",
+    "trustBadgeReview": "Relecture recommandée",
+    "trustBadgeTooltip": "Cette lettre a été générée uniquement à partir des informations de votre CV et de l'offre d'emploi. Relisez-la toujours avant de l'envoyer.",
+    "coverLetterSaved": "Lettre de motivation sauvegardée",
+    "coverLetterDownloadTxt": "Télécharger TXT",
+    "coverLetterDownloadDocx": "Télécharger DOCX"
   },
   "applications": {
     "title": "Pipeline de candidatures",
