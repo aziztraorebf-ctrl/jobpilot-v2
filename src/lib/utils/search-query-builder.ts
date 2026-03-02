@@ -18,11 +18,12 @@ export function buildSearchQueries(
 ): string[] {
   if (!keywords || keywords.length === 0) return [];
 
-  const totalGroups = Math.ceil(keywords.length / groupSize);
-  const safeIndex = rotationIndex % totalGroups;
-  const start = safeIndex * groupSize;
+  const safeGroupSize = groupSize > 0 ? groupSize : DEFAULT_GROUP_SIZE;
+  const totalGroups = Math.ceil(keywords.length / safeGroupSize);
+  const safeIndex = Math.max(0, rotationIndex) % totalGroups;
+  const start = safeIndex * safeGroupSize;
 
-  return keywords.slice(start, start + groupSize);
+  return keywords.slice(start, start + safeGroupSize);
 }
 
 /**
@@ -34,6 +35,7 @@ export function nextRotationIndex(
   groupSize = DEFAULT_GROUP_SIZE
 ): number {
   if (!keywords || keywords.length === 0) return 0;
-  const totalGroups = Math.ceil(keywords.length / groupSize);
-  return (currentIndex + 1) % totalGroups;
+  const safeGroupSize = groupSize > 0 ? groupSize : DEFAULT_GROUP_SIZE;
+  const totalGroups = Math.ceil(keywords.length / safeGroupSize);
+  return (Math.max(0, currentIndex) + 1) % totalGroups;
 }

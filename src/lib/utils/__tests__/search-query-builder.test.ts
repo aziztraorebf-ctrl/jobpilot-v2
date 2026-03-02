@@ -34,6 +34,16 @@ describe("buildSearchQueries", () => {
     const kw = ["A", "B", "C", "D", "E", "F"];
     expect(buildSearchQueries(kw, 0, 3)).toEqual(["A", "B", "C"]);
   });
+
+  it("retourne le premier groupe si rotationIndex négatif", () => {
+    const kw = ["A", "B", "C", "D", "E", "F", "G"];
+    expect(buildSearchQueries(kw, -1)).toEqual(["A", "B", "C", "D"]);
+  });
+
+  it("utilise groupSize par défaut si groupSize=0", () => {
+    const kw = ["A", "B", "C", "D", "E", "F"];
+    expect(buildSearchQueries(kw, 0, 0)).toEqual(["A", "B", "C", "D"]);
+  });
 });
 
 describe("nextRotationIndex", () => {
@@ -49,5 +59,14 @@ describe("nextRotationIndex", () => {
 
   it("retourne 0 si keywords vide", () => {
     expect(nextRotationIndex([], 0)).toBe(0);
+  });
+
+  it("retourne 0 si keywords undefined", () => {
+    expect(nextRotationIndex(undefined, 0)).toBe(0);
+  });
+
+  it("traite currentIndex négatif de façon défensive", () => {
+    const kw = ["A", "B", "C", "D", "E", "F", "G"];
+    expect(nextRotationIndex(kw, -1)).toBe(1);
   });
 });
