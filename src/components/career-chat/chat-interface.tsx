@@ -18,13 +18,17 @@ interface Message {
 interface ChatInterfaceProps {
   title?: string
   placeholder?: string
+  emptyStateText?: string
+  tokenLabel?: string
   tokenLimit?: number
   className?: string
 }
 
 export function ChatInterface({
-  title = "Career Exploration Chat",
-  placeholder = "Ask me about your career options, skill gaps, or job search strategy...",
+  title = "",
+  placeholder = "",
+  emptyStateText = "",
+  tokenLabel = "tokens",
   tokenLimit,
   className,
 }: ChatInterfaceProps) {
@@ -105,6 +109,7 @@ export function ChatInterface({
         <TokenUsageDisplay
           tokensUsed={totalTokens}
           tokenLimit={tokenLimit}
+          tokenLabel={tokenLabel}
           size="sm"
         />
       </CardHeader>
@@ -112,6 +117,7 @@ export function ChatInterface({
         <MessageList
           messages={messages}
           isLoading={isLoading}
+          emptyStateText={emptyStateText}
           className="h-[500px] rounded-lg border bg-muted/30"
         />
 

@@ -170,6 +170,8 @@
     "welcome": "Bonjour ! Je suis votre conseiller de carriere IA. Je peux vous aider a explorer des parcours professionnels, identifier les competences a developper, comprendre les tendances du marche de l'emploi et planifier votre croissance professionnelle. Que souhaitez-vous savoir ?",
     "errorLoading": "Echec du chargement de la conversation. Veuillez reessayer.",
     "errorSending": "Echec de l'envoi du message. Veuillez reessayer.",
+    "emptyState": "Commencez une conversation pour explorer vos options de carriere",
+    "tokenLabel": "jetons",
     "tokenUsage": "Utilisation de jetons",
     "tokenLimit": "Limite de jetons atteinte. Demarrez une nouvelle conversation pour continuer.",
     "conversationHistory": "Historique de conversation"

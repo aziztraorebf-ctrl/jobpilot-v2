@@ -16,12 +16,14 @@ interface Message {
 interface MessageListProps {
   messages: Message[]
   isLoading?: boolean
+  emptyStateText?: string
   className?: string
 }
 
 export function MessageList({
   messages,
   isLoading = false,
+  emptyStateText = "",
   className,
 }: MessageListProps) {
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -44,7 +46,7 @@ export function MessageList({
       {messages.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
           <Bot className="size-12 opacity-20" />
-          <p className="text-sm">Start a conversation to explore your career options</p>
+          <p className="text-sm">{emptyStateText}</p>
         </div>
       )}
 

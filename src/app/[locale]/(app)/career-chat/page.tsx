@@ -14,7 +14,12 @@ export default async function CareerChatPage() {
           {t("description")}
         </p>
       </div>
-      <ChatInterface />
+      <ChatInterface
+        title={t("title")}
+        placeholder={t("placeholder")}
+        emptyStateText={t("emptyState")}
+        tokenLabel={t("tokenLabel")}
+      />
     </div>
   );
 }

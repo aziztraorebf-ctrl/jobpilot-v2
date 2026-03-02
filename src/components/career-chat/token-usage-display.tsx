@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 interface TokenUsageDisplayProps {
   tokensUsed: number;
   tokenLimit?: number;
+  tokenLabel?: string;
   size?: "sm" | "md" | "lg";
   showPercentage?: boolean;
 }
@@ -54,6 +55,7 @@ function formatTokenCount(count: number): string {
 export function TokenUsageDisplay({
   tokensUsed,
   tokenLimit,
+  tokenLabel = "tokens",
   size = "md",
   showPercentage = false,
 }: TokenUsageDisplayProps) {
@@ -93,7 +95,7 @@ export function TokenUsageDisplay({
         {showPercentage && percentage !== null && ` (${percentage}%)`}
       </span>
       <span className={cn("opacity-60", config.label)}>
-        {tokensUsed === 1 ? "token" : "tokens"}
+        {tokenLabel}
       </span>
     </div>
   );
