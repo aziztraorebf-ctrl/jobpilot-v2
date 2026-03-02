@@ -90,6 +90,7 @@
     "noDismissedJobs": "No dismissed jobs",
     "applicationTracked": "Application tracked automatically",
     "seen": "Seen",
+    "seenOn": "Seen on {date}",
     "newBadge": "New",
     "hybrid": "Hybrid",
     "onsite": "On-site",

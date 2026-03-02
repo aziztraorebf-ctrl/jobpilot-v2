@@ -21,7 +21,7 @@ interface JobListProps {
   initialJobs: JobRow[];
   initialScoreMap: Record<string, number>;
   initialDismissedIds: string[];
-  initialSeenIds?: string[];
+  initialSeenIds?: { id: string; seen_at: string }[];
   onJobDismissed?: (jobId: string, job: JobRow) => void;
 }
 
@@ -46,7 +46,10 @@ export function JobList({
     () => new Set(initialDismissedIds)
   );
 
-  const [seenIds, setSeenIds] = useState<Set<string>>(() => new Set(initialSeenIds));
+  // Map of jobId -> seen_at date (null = seen in this session, no date yet)
+  const [seenMap, setSeenMap] = useState<Map<string, string | null>>(
+    () => new Map(initialSeenIds.map((s) => [s.id, s.seen_at]))
+  );
 
   const [scoreModalJob, setScoreModalJob] = useState<{ id: string; title: string } | null>(null);
   const [coverLetterJob, setCoverLetterJob] = useState<{ id: string; title: string } | null>(null);
@@ -110,8 +113,9 @@ export function JobList({
   }, [t]);
 
   const handleMarkSeen = useCallback(async (jobId: string) => {
-    if (!jobId) return;
-    setSeenIds((prev) => new Set(prev).add(jobId));
+    if (!jobId || seenMap.has(jobId)) return;
+    // Optimistic update with current timestamp
+    setSeenMap((prev) => new Map(prev).set(jobId, new Date().toISOString()));
     try {
       const res = await fetch("/api/jobs/seen", {
         method: "POST",
@@ -120,14 +124,14 @@ export function JobList({
       });
       if (!res.ok) throw new Error("Mark seen failed");
     } catch {
-      setSeenIds((prev) => {
-        const next = new Set(prev);
+      setSeenMap((prev) => {
+        const next = new Map(prev);
         next.delete(jobId);
         return next;
       });
       toast.error(t("actionFailed"));
     }
-  }, [t]);
+  }, [seenMap, t]);
 
   const filteredJobs = useMemo(() => {
     const searchLower = filters.search.toLowerCase();
@@ -140,7 +144,7 @@ export function JobList({
         }
 
         // New only filter: exclude seen jobs
-        if (filters.newOnly && seenIds.has(job.id)) {
+        if (filters.newOnly && seenMap.has(job.id)) {
           return false;
         }
 
@@ -184,7 +188,7 @@ export function JobList({
         const scoreB = initialScoreMap[b.id] ?? 0;
         return scoreB - scoreA;
       });
-  }, [filters, initialJobs, initialScoreMap, dismissedIds, seenIds]);
+  }, [filters, initialJobs, initialScoreMap, dismissedIds, seenMap]);
 
   return (
     <div className="space-y-4">
@@ -205,7 +209,7 @@ export function JobList({
           key={job.id}
           job={job}
           score={initialScoreMap[job.id] ?? 0}
-          isSeen={seenIds.has(job.id)}
+          seenAt={seenMap.get(job.id) ?? null}
           onBookmark={handleBookmark}
           onDismiss={handleDismiss}
           onMarkSeen={handleMarkSeen}

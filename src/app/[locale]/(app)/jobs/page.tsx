@@ -10,7 +10,7 @@ export default async function JobsPage() {
   let jobs: Awaited<ReturnType<typeof getJobs>> = [];
   let dismissedIds: string[] = [];
   let dismissedJobs: Awaited<ReturnType<typeof getDismissedJobs>> = [];
-  let seenIds: string[] = [];
+  let seenIds: { id: string; seen_at: string }[] = [];
 
   try {
     [jobs, dismissedIds, dismissedJobs, seenIds] = await Promise.all([

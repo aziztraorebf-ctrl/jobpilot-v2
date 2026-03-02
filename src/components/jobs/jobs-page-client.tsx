@@ -15,7 +15,7 @@ interface JobsPageClientProps {
   initialScoreMap: Record<string, number>;
   initialDismissedIds: string[];
   initialDismissedJobs: JobRow[];
-  initialSeenIds: string[];
+  initialSeenIds: { id: string; seen_at: string }[];
   title: string;
   initialRemainingSearches: number;
 }

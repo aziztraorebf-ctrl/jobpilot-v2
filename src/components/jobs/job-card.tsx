@@ -12,7 +12,7 @@ import type { JobRow } from "@/lib/supabase/queries";
 interface JobCardProps {
   job: JobRow | UnifiedJob;
   score: number;
-  isSeen?: boolean;
+  seenAt?: string | null;
   onBookmark?: (jobId: string) => void;
   onDismiss?: (jobId: string) => void;
   onMarkSeen?: (jobId: string) => void;
@@ -103,7 +103,7 @@ function getSourceLabel(source: string): string {
   }
 }
 
-export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen, onScoreClick, onCoverLetterClick }: JobCardProps) {
+export function JobCard({ job, score, seenAt, onBookmark, onDismiss, onMarkSeen, onScoreClick, onCoverLetterClick }: JobCardProps) {
   const t = useTranslations("jobs");
   const jobId = "id" in job ? String((job as Record<string, unknown>).id) : "";
   const days = getRelativeDays(job.posted_at);
@@ -112,12 +112,18 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen,
     job.salary_max,
     job.salary_currency
   );
+  const isSeen = seenAt != null;
 
   function handleApply() {
     onMarkSeen?.(jobId);
     if (job.source_url) {
       window.open(job.source_url, "_blank", "noopener,noreferrer");
     }
+  }
+
+  function handleScoreClick() {
+    onMarkSeen?.(jobId);
+    onScoreClick?.(jobId);
   }
 
   return (
@@ -133,7 +139,11 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen,
               <h3 className="text-lg font-semibold leading-tight truncate">
                 {job.title}
               </h3>
-              {!isSeen && (
+              {isSeen ? (
+                <Badge className="bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border-transparent shrink-0">
+                  {seenAt ? t("seenOn", { date: new Date(seenAt).toLocaleDateString() }) : t("seen")}
+                </Badge>
+              ) : (
                 <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 border-transparent shrink-0">
                   {t("newBadge")}
                 </Badge>
@@ -212,7 +222,7 @@ export function JobCard({ job, score, isSeen, onBookmark, onDismiss, onMarkSeen,
               type="button"
               className="cursor-pointer"
               title={t("scoreDetail")}
-              onClick={() => onScoreClick(jobId)}
+              onClick={handleScoreClick}
             >
               <ScoreCircle score={score} size="md" />
             </button>

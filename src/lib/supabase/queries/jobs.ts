@@ -249,13 +249,13 @@ export async function restoreJob(userId: string, jobListingId: string): Promise<
 }
 
 /**
- * Get IDs of jobs the user has seen (but not dismissed).
+ * Get seen job data (id + seen_at) for the current user (not dismissed).
  */
-export async function getSeenJobIds(userId: string): Promise<string[]> {
+export async function getSeenJobIds(userId: string): Promise<{ id: string; seen_at: string }[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("seen_jobs")
-    .select("job_listing_id")
+    .select("job_listing_id, seen_at")
     .eq("user_id", userId)
     .eq("dismissed", false);
 
@@ -263,5 +263,5 @@ export async function getSeenJobIds(userId: string): Promise<string[]> {
     throw new Error(`Failed to fetch seen jobs: ${error.message}`);
   }
 
-  return (data ?? []).map((row) => row.job_listing_id);
+  return (data ?? []).map((row) => ({ id: row.job_listing_id, seen_at: row.seen_at }));
 }

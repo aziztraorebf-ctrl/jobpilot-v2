@@ -90,6 +90,7 @@
     "noDismissedJobs": "Aucune offre retiree",
     "applicationTracked": "Candidature suivie automatiquement",
     "seen": "Vu",
+    "seenOn": "Vu le {date}",
     "newBadge": "Nouveau",
     "hybrid": "Hybride",
     "onsite": "Sur site",
