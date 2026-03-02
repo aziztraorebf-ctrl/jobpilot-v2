@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
+import { deduplicateJobs } from "@/lib/services/deduplicator";
 import { upsertJobs, getProfilesWithAutoSearch, getScoreMap } from "@/lib/supabase/queries";
+import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { sendEmail } from "@/lib/services/email-service";
 import { render } from "@react-email/components";
 import { NewJobsAlert } from "@/emails/new-jobs-alert";
+import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-builder";
+import type { UnifiedJob } from "@/lib/schemas/job";
 
 export async function GET(request: Request) {
-  // Verify cron secret
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -27,21 +30,32 @@ export async function GET(request: Request) {
         const keywords = (prefs.keywords as string[] | undefined) ?? [];
         const locations = (prefs.locations as string[] | undefined) ?? [];
         const threshold = (prefs.alert_threshold as number | undefined) ?? 60;
+        const rotationIndex = (prefs.keyword_rotation_index as number | undefined) ?? 0;
 
         if (keywords.length === 0) continue;
 
-        const query = keywords.join(" ");
+        const activeKeywords = buildSearchQueries(keywords, rotationIndex);
         const location = locations[0] ?? "Canada";
 
-        // Fetch new jobs
-        const result = await aggregateJobSearch({ keywords: query, location });
-        if (result.jobs.length === 0) continue;
+        const allJobs: UnifiedJob[] = [];
+        for (const query of activeKeywords) {
+          const result = await aggregateJobSearch({ keywords: query, location });
+          allJobs.push(...result.jobs);
+        }
 
-        // Upsert into DB
-        const inserted = await upsertJobs(result.jobs);
+        const uniqueJobs = deduplicateJobs(allJobs);
+
+        // Always advance rotation index, even if no results
+        const newIndex = nextRotationIndex(keywords, rotationIndex);
+        await updateProfile(profile.id, {
+          search_preferences: { ...prefs, keyword_rotation_index: newIndex },
+        });
+
+        if (uniqueJobs.length === 0) continue;
+
+        const inserted = await upsertJobs(uniqueJobs);
         totalInserted += inserted.length;
 
-        // Check for high-scoring jobs to notify about
         if (inserted.length > 0) {
           const insertedIds = inserted.map((j) => j.id);
           const scores = await getScoreMap(profile.id, insertedIds);
@@ -62,7 +76,7 @@ export async function GET(request: Request) {
                 jobs: highScoreJobs,
                 threshold,
                 date: new Date().toISOString().split("T")[0],
-                keywords,
+                keywords: activeKeywords,
               })
             );
 
