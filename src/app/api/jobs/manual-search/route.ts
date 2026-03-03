@@ -1,13 +1,19 @@
+// src/app/api/jobs/manual-search/route.ts
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { getSupabase } from "@/lib/supabase/client";
 import { requireUser } from "@/lib/supabase/get-user";
 import { getProfile, incrementManualSearch } from "@/lib/supabase/queries/profiles";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { deduplicateJobs } from "@/lib/services/deduplicator";
 import { upsertJobs } from "@/lib/supabase/queries/jobs";
-import { buildSearchQueries } from "@/lib/utils/search-query-builder";
+import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-builder";
+import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
+import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { apiError } from "@/lib/api/error-response";
 import type { UnifiedJob } from "@/lib/schemas/job";
+
+const MIN_DISPLAY_SCORE = 40;
 
 export async function POST(_request: Request) {
   try {
@@ -43,6 +49,12 @@ export async function POST(_request: Request) {
     const activeKeywords = buildSearchQueries(keywords, rotationIndex);
     const location = locations[0] ?? "Canada";
 
+    // Advance rotation index so next search uses different keywords
+    const newIndex = nextRotationIndex(keywords, rotationIndex);
+    await updateProfile(profile.id, {
+      search_preferences: { ...prefs, keyword_rotation_index: newIndex },
+    });
+
     const allJobs: UnifiedJob[] = [];
     for (const query of activeKeywords) {
       const result = await aggregateJobSearch({ keywords: query, location });
@@ -52,10 +64,36 @@ export async function POST(_request: Request) {
     const uniqueJobs = deduplicateJobs(allJobs);
     const inserted = await upsertJobs(uniqueJobs);
 
+    // Auto-score inserted jobs
+    const jobsToScore = inserted.map((j) => ({
+      id: j.id,
+      description: j.description,
+      title: j.title,
+    }));
+    const scores = await scoreJobsForProfile(user.id, jobsToScore);
+
+    // Deactivate jobs below MIN_DISPLAY_SCORE
+    const supabase = getSupabase();
+    const belowThresholdIds = inserted
+      .filter((j) => (scores[j.id] ?? 0) < MIN_DISPLAY_SCORE)
+      .map((j) => j.id);
+
+    if (belowThresholdIds.length > 0) {
+      const { error: deactivateError } = await supabase
+        .from("job_listings")
+        .update({ is_active: false })
+        .in("id", belowThresholdIds);
+      if (deactivateError) {
+        console.error("[manual-search] Failed to deactivate low-score jobs:", deactivateError.message);
+      }
+    }
+
     revalidatePath("/[locale]/(app)/jobs", "page");
 
     return NextResponse.json({
       fetched: inserted.length,
+      scored: Object.keys(scores).length,
+      displayed: inserted.length - belowThresholdIds.length,
       remaining: status.remaining,
       activeKeywords,
     });
