@@ -11,9 +11,8 @@ import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
 import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { apiError } from "@/lib/api/error-response";
+import { MIN_DISPLAY_SCORE } from "@/lib/config/scoring";
 import type { UnifiedJob } from "@/lib/schemas/job";
-
-const MIN_DISPLAY_SCORE = 40;
 
 export async function POST(_request: Request) {
   try {
@@ -72,19 +71,23 @@ export async function POST(_request: Request) {
     }));
     const scores = await scoreJobsForProfile(user.id, jobsToScore);
 
-    // Deactivate jobs below MIN_DISPLAY_SCORE
+    // Deactivate jobs below MIN_DISPLAY_SCORE (only when scoring produced results;
+    // if scores is empty — no CV or total failure — keep all jobs active)
     const supabase = getSupabase();
-    const belowThresholdIds = inserted
-      .filter((j) => (scores[j.id] ?? 0) < MIN_DISPLAY_SCORE)
-      .map((j) => j.id);
+    let belowThresholdIds: string[] = [];
+    if (Object.keys(scores).length > 0) {
+      belowThresholdIds = inserted
+        .filter((j) => (scores[j.id] ?? 0) < MIN_DISPLAY_SCORE)
+        .map((j) => j.id);
 
-    if (belowThresholdIds.length > 0) {
-      const { error: deactivateError } = await supabase
-        .from("job_listings")
-        .update({ is_active: false })
-        .in("id", belowThresholdIds);
-      if (deactivateError) {
-        console.error("[manual-search] Failed to deactivate low-score jobs:", deactivateError.message);
+      if (belowThresholdIds.length > 0) {
+        const { error: deactivateError } = await supabase
+          .from("job_listings")
+          .update({ is_active: false })
+          .in("id", belowThresholdIds);
+        if (deactivateError) {
+          console.error("[manual-search] Failed to deactivate low-score jobs:", deactivateError.message);
+        }
       }
     }
 

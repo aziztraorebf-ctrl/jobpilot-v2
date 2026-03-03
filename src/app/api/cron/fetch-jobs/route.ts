@@ -10,9 +10,8 @@ import { render } from "@react-email/components";
 import { NewJobsAlert } from "@/emails/new-jobs-alert";
 import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-builder";
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
+import { MIN_DISPLAY_SCORE } from "@/lib/config/scoring";
 import type { UnifiedJob } from "@/lib/schemas/job";
-
-const MIN_DISPLAY_SCORE = 40;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -72,16 +71,19 @@ export async function GET(request: Request) {
         }));
         const scores = await scoreJobsForProfile(profile.id, jobsToScore);
 
-        // Deactivate jobs below MIN_DISPLAY_SCORE (not relevant enough to show)
-        const belowThresholdIds = inserted
-          .filter((j) => (scores[j.id] ?? 0) < MIN_DISPLAY_SCORE)
-          .map((j) => j.id);
+        // Deactivate jobs below MIN_DISPLAY_SCORE (only when scoring produced results;
+        // if scores is empty — no CV or total failure — keep all jobs active)
+        if (Object.keys(scores).length > 0) {
+          const belowThresholdIds = inserted
+            .filter((j) => (scores[j.id] ?? 0) < MIN_DISPLAY_SCORE)
+            .map((j) => j.id);
 
-        if (belowThresholdIds.length > 0) {
-          await supabase
-            .from("job_listings")
-            .update({ is_active: false })
-            .in("id", belowThresholdIds);
+          if (belowThresholdIds.length > 0) {
+            await supabase
+              .from("job_listings")
+              .update({ is_active: false })
+              .in("id", belowThresholdIds);
+          }
         }
 
         // Send email alert for jobs above alert_threshold
