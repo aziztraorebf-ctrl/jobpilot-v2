@@ -14,7 +14,7 @@ export default async function JobsPage() {
 
   try {
     [jobs, dismissedIds, dismissedJobs, seenIds] = await Promise.all([
-      getJobs(),
+      getJobs({ inbox: true }),
       getDismissedJobIds(user.id),
       getDismissedJobs(user.id),
       getSeenJobIds(user.id),
