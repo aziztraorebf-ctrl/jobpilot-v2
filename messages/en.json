@@ -38,7 +38,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "newJobs": "New Jobs",
+    "activeJobs": "Available Jobs",
     "avgScore": "Average Score",
     "activeApps": "Active Applications",
     "upcomingInterviews": "Upcoming Interviews",
@@ -54,7 +54,8 @@
     "unknownJob": "Untitled job",
     "jobSaved": "Job saved to applications",
     "jobDismissed": "Job dismissed",
-    "actionFailed": "Action failed, please try again"
+    "actionFailed": "Action failed, please try again",
+    "viewScore": "View score details"
   },
   "jobs": {
     "title": "Job Listings",

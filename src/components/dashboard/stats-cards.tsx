@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlus, TrendingUp, Send, Video } from "lucide-react";
+import { Briefcase, TrendingUp, Send, Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -12,9 +12,9 @@ interface StatsCardsProps {
 
 const statConfigs = [
   {
-    key: "newJobs" as const,
-    statsField: "newJobs" as const,
-    icon: CalendarPlus,
+    key: "activeJobs" as const,
+    statsField: "activeJobs" as const,
+    icon: Briefcase,
     iconColor: "text-blue-500",
     gradient:
       "bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10",

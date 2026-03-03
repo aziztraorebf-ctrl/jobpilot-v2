@@ -455,7 +455,7 @@ describe("getApplicationStats", () => {
     expect(stats).toEqual({
       activeApplications: 5,
       upcomingInterviews: 2,
-      newJobs: 15,
+      activeJobs: 15,
       avgScore: 80,
     });
   });
@@ -502,7 +502,7 @@ describe("getApplicationStats", () => {
 
     expect(stats.activeApplications).toBe(0);
     expect(stats.upcomingInterviews).toBe(0);
-    expect(stats.newJobs).toBe(0);
+    expect(stats.activeJobs).toBe(0);
   });
 
   it("throws when active applications query fails", async () => {
@@ -543,7 +543,7 @@ describe("getApplicationStats", () => {
     useMock(mockGetSupabase, mockClient);
 
     await expect(getApplicationStats(TEST_USER_ID)).rejects.toThrow(
-      "Failed to count new jobs: Table not found"
+      "Failed to count active jobs: Table not found"
     );
   });
 

@@ -38,7 +38,7 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "newJobs": "Nouvelles offres",
+    "activeJobs": "Offres disponibles",
     "avgScore": "Score moyen",
     "activeApps": "Candidatures actives",
     "upcomingInterviews": "Entrevues a venir",
@@ -54,7 +54,8 @@
     "unknownJob": "Poste sans titre",
     "jobSaved": "Offre sauvegardee dans les candidatures",
     "jobDismissed": "Offre retiree",
-    "actionFailed": "Action echouee, reessayez"
+    "actionFailed": "Action echouee, reessayez",
+    "viewScore": "Voir le detail du score"
   },
   "jobs": {
     "title": "Offres d'emploi",

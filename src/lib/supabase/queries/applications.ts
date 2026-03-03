@@ -38,7 +38,7 @@ export interface ApplicationWithJob {
 
 /** Aggregate stats surfaced on the dashboard. */
 export interface DashboardStats {
-  newJobs: number;
+  activeJobs: number;
   avgScore: number;
   activeApplications: number;
   upcomingInterviews: number;
@@ -267,9 +267,6 @@ export async function deleteApplication(userId: string, id: string): Promise<voi
 export async function getApplicationStats(userId: string): Promise<DashboardStats> {
   const supabase = getSupabase();
   const now = new Date().toISOString();
-  const sevenDaysAgo = new Date(
-    Date.now() - 7 * 24 * 60 * 60 * 1000
-  ).toISOString();
 
   // Run all four queries in parallel for performance
   const [activeResult, interviewResult, newJobsResult, avgScoreResult] =
@@ -279,7 +276,7 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
         .from("applications")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
-        .not("status", "in", `(${CLOSED_STATUSES.join(",")})`),
+        .not("status", "in", `(${CLOSED_STATUSES.map((s) => `"${s}"`).join(",")})`),
 
       // 2. Upcoming interviews
       supabase
@@ -289,11 +286,11 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
         .eq("status", "interview")
         .gt("interview_at", now),
 
-      // 3. New job listings in last 7 days
+      // 3. Active job listings right now
       supabase
         .from("job_listings")
         .select("id", { count: "exact", head: true })
-        .gte("fetched_at", sevenDaysAgo),
+        .eq("is_active", true),
 
       // 4. Average match score for the user
       supabase
@@ -316,7 +313,7 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
   }
   if (newJobsResult.error) {
     throw new Error(
-      `Failed to count new jobs: ${newJobsResult.error.message}`
+      `Failed to count active jobs: ${newJobsResult.error.message}`
     );
   }
   if (avgScoreResult.error) {
@@ -343,7 +340,7 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
   return {
     activeApplications: activeResult.count ?? 0,
     upcomingInterviews: interviewResult.count ?? 0,
-    newJobs: newJobsResult.count ?? 0,
+    activeJobs: newJobsResult.count ?? 0,
     avgScore,
   };
 }

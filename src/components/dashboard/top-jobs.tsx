@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScoreCircle } from "@/components/ui/score-circle";
+import { ScoreDetailModal } from "@/components/jobs/score-detail-modal";
 import { toast } from "sonner";
 import type { JobRow } from "@/lib/supabase/queries";
 
@@ -18,6 +19,7 @@ interface TopJobsProps {
 export function TopJobs({ jobs: initialJobs, scoreMap }: TopJobsProps) {
   const t = useTranslations("dashboard");
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
+  const [scoreModal, setScoreModal] = useState<{ jobId: string; jobTitle: string } | null>(null);
 
   const handleSave = useCallback(async (jobId: string) => {
     setHiddenIds((prev) => new Set(prev).add(jobId));
@@ -62,78 +64,76 @@ export function TopJobs({ jobs: initialJobs, scoreMap }: TopJobsProps) {
   const visibleJobs = initialJobs.filter((job) => !hiddenIds.has(job.id));
 
   return (
-    <section>
-      <h2 className="text-xl font-semibold mb-4">{t("topJobsToday")}</h2>
-      <div className="relative">
-        <div className="flex overflow-x-auto gap-4 pb-2 snap-x snap-mandatory scroll-smooth -mx-6 px-6">
-          {visibleJobs.map((job) => {
-            const score = scoreMap[job.id] ?? 0;
-
-            return (
-              <Card
-                key={job.id}
-                className="min-w-[260px] max-w-[300px] sm:min-w-[280px] sm:max-w-[320px] shrink-0 border snap-start"
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold truncate" title={job.title}>
-                        {job.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {job.company_name ?? t("unknownCompany")}
-                      </p>
+    <>
+      <section>
+        <h2 className="text-xl font-semibold mb-4">{t("topJobsToday")}</h2>
+        <div className="relative">
+          <div className="flex overflow-x-auto gap-4 pb-2 snap-x snap-mandatory scroll-smooth -mx-6 px-6">
+            {visibleJobs.map((job) => {
+              const score = scoreMap[job.id] ?? 0;
+              return (
+                <Card
+                  key={job.id}
+                  className="min-w-[260px] max-w-[300px] sm:min-w-[280px] sm:max-w-[320px] shrink-0 border snap-start"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold truncate" title={job.title}>
+                          {job.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {job.company_name ?? t("unknownCompany")}
+                        </p>
+                      </div>
+                      {score > 0 ? (
+                        <button
+                          onClick={() => setScoreModal({ jobId: job.id, jobTitle: job.title })}
+                          className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+                          aria-label={t("viewScore")}
+                        >
+                          <ScoreCircle score={score} size="md" />
+                        </button>
+                      ) : (
+                        <ScoreCircle score={score} size="md" />
+                      )}
                     </div>
-                    <ScoreCircle score={score} size="md" />
-                  </div>
-
-                  {job.location !== null && (
-                    <Badge variant="outline" className="mt-3 gap-1">
-                      <MapPin className="size-3" />
-                      {job.location}
-                    </Badge>
-                  )}
-
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t("save")}
-                      onClick={() => handleSave(job.id)}
-                    >
-                      <Heart className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t("apply")}
-                      asChild
-                    >
-                      <a
-                        href={job.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="size-4" />
-                      </a>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t("dismiss")}
-                      onClick={() => handleDismiss(job.id)}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    {job.location !== null && (
+                      <Badge variant="outline" className="mt-3 gap-1">
+                        <MapPin className="size-3" />
+                        {job.location}
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                      <Button variant="ghost" size="icon" aria-label={t("save")} onClick={() => handleSave(job.id)}>
+                        <Heart className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" aria-label={t("apply")} asChild>
+                        <a href={job.source_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="size-4" />
+                        </a>
+                      </Button>
+                      <Button variant="ghost" size="icon" aria-label={t("dismiss")} onClick={() => handleDismiss(job.id)}>
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
         </div>
-        {/* Scroll fade indicator */}
-        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
-      </div>
-    </section>
+      </section>
+
+      {scoreModal && (
+        <ScoreDetailModal
+          jobId={scoreModal.jobId}
+          jobTitle={scoreModal.jobTitle}
+          open={true}
+          onClose={() => setScoreModal(null)}
+        />
+      )}
+    </>
   );
 }

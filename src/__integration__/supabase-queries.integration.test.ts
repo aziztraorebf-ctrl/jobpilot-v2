@@ -346,7 +346,7 @@ describe.skipIf(!HAS_SUPABASE)("Supabase Query Layer - Integration", () => {
       expect(stats).toBeDefined();
       expect(typeof stats.activeApplications).toBe("number");
       expect(typeof stats.upcomingInterviews).toBe("number");
-      expect(typeof stats.newJobs).toBe("number");
+      expect(typeof stats.activeJobs).toBe("number");
       expect(typeof stats.avgScore).toBe("number");
 
       // Our test application is "applied" (not closed), so active >= 1
@@ -355,7 +355,7 @@ describe.skipIf(!HAS_SUPABASE)("Supabase Query Layer - Integration", () => {
       console.log(
         `[Applications] Stats: active=${stats.activeApplications}, ` +
           `interviews=${stats.upcomingInterviews}, ` +
-          `newJobs=${stats.newJobs}, avgScore=${stats.avgScore}`
+          `activeJobs=${stats.activeJobs}, avgScore=${stats.avgScore}`
       );
     });
 

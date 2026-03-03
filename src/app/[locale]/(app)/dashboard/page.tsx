@@ -49,7 +49,7 @@ export default async function DashboardPage() {
     ]);
   } catch (error) {
     console.error("[DashboardPage] Failed to fetch data:", error);
-    stats = { newJobs: 0, avgScore: 0, activeApplications: 0, upcomingInterviews: 0 };
+    stats = { activeJobs: 0, avgScore: 0, activeApplications: 0, upcomingInterviews: 0 };
     jobs = [];
     applications = [];
   }
