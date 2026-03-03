@@ -10,7 +10,12 @@ interface CvSummary {
 const SYSTEM_PROMPT = `You are a job matching expert. Analyze the candidate's CV against the job description.
 Score the match from 0-100 in these categories: overall, skills, experience, education.
 Be honest and precise. List matching skills, missing skills, strengths, and concerns.
-Respond in the same language as the job description.`;
+Respond in the same language as the job description.
+
+CRITICAL RULE — Domain incompatibility:
+If the job requires a core expertise that the candidate clearly does not have (e.g., the job is for a software developer, physician, lawyer, or engineer but the candidate has no background in that field), the overall_score MUST be 10 or below, regardless of soft skills or transferable qualities.
+Soft skills (communication, leadership, organization) do NOT compensate for a missing core domain. A manager with no coding experience cannot fill a software engineering role. A non-doctor cannot fill a medical role.
+Apply this rule strictly: domain mismatch = overall_score ≤ 10.`;
 
 export function buildMatchPrompt(cvData: CvSummary, jobDescription: string): string {
   const skills = [
