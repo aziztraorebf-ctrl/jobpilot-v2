@@ -1,13 +1,18 @@
+// src/app/api/cron/fetch-jobs/route.ts
 import { NextResponse } from "next/server";
+import { getSupabase } from "@/lib/supabase/client";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { deduplicateJobs } from "@/lib/services/deduplicator";
-import { upsertJobs, getProfilesWithAutoSearch, getScoreMap } from "@/lib/supabase/queries";
+import { upsertJobs, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
 import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { sendEmail } from "@/lib/services/email-service";
 import { render } from "@react-email/components";
 import { NewJobsAlert } from "@/emails/new-jobs-alert";
 import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-builder";
+import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
 import type { UnifiedJob } from "@/lib/schemas/job";
+
+const MIN_DISPLAY_SCORE = 40;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -23,6 +28,7 @@ export async function GET(request: Request) {
     }
 
     let totalInserted = 0;
+    const supabase = getSupabase();
 
     for (const profile of profiles) {
       try {
@@ -56,35 +62,54 @@ export async function GET(request: Request) {
         const inserted = await upsertJobs(uniqueJobs);
         totalInserted += inserted.length;
 
-        if (inserted.length > 0) {
-          const insertedIds = inserted.map((j) => j.id);
-          const scores = await getScoreMap(profile.id, insertedIds);
-          const highScoreJobs = inserted
-            .filter((j) => (scores[j.id] ?? 0) >= threshold)
-            .map((j) => ({
-              title: j.title,
-              company: j.company_name ?? "Unknown",
-              location: j.location,
-              score: scores[j.id] ?? 0,
-              sourceUrl: j.source_url,
-              description: j.description,
-            }));
+        if (inserted.length === 0) continue;
 
-          if (highScoreJobs.length > 0) {
-            const html = await render(
-              NewJobsAlert({
-                jobs: highScoreJobs,
-                threshold,
-                date: new Date().toISOString().split("T")[0],
-                keywords: activeKeywords,
-              })
-            );
+        // Auto-score all inserted jobs against user's primary resume
+        const jobsToScore = inserted.map((j) => ({
+          id: j.id,
+          description: j.description,
+          title: j.title,
+        }));
+        const scores = await scoreJobsForProfile(profile.id, jobsToScore);
 
-            await sendEmail({
-              subject: `[JobPilot] ${highScoreJobs.length} nouvelle(s) offre(s) correspondante(s)`,
-              html,
-            });
-          }
+        // Deactivate jobs below MIN_DISPLAY_SCORE (not relevant enough to show)
+        const belowThresholdIds = inserted
+          .filter((j) => (scores[j.id] ?? 0) < MIN_DISPLAY_SCORE)
+          .map((j) => j.id);
+
+        if (belowThresholdIds.length > 0) {
+          await supabase
+            .from("job_listings")
+            .update({ is_active: false })
+            .in("id", belowThresholdIds);
+        }
+
+        // Send email alert for jobs above alert_threshold
+        const highScoreJobs = inserted
+          .filter((j) => (scores[j.id] ?? 0) >= threshold)
+          .map((j) => ({
+            title: j.title,
+            company: j.company_name ?? "Unknown",
+            location: j.location,
+            score: scores[j.id] ?? 0,
+            sourceUrl: j.source_url,
+            description: j.description,
+          }));
+
+        if (highScoreJobs.length > 0) {
+          const html = await render(
+            NewJobsAlert({
+              jobs: highScoreJobs,
+              threshold,
+              date: new Date().toISOString().split("T")[0],
+              keywords: activeKeywords,
+            })
+          );
+
+          await sendEmail({
+            subject: `[JobPilot] ${highScoreJobs.length} nouvelle(s) offre(s) correspondante(s)`,
+            html,
+          });
         }
       } catch (profileError: unknown) {
         const msg = profileError instanceof Error ? profileError.message : String(profileError);
