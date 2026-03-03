@@ -103,6 +103,15 @@ describe("scoreJobsForProfile", () => {
     expect(result).toEqual({ "job-2": 75 });
   });
 
+  it("continue si upsertScore échoue", async () => {
+    vi.mocked(upsertScore)
+      .mockRejectedValueOnce(new Error("DB write error"))
+      .mockResolvedValueOnce({} as any);
+    const result = await scoreJobsForProfile("user-1", mockJobs);
+    expect(scoreMatch).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ "job-2": 75 });
+  });
+
   it("upsertScore reçoit les bons paramètres", async () => {
     await scoreJobsForProfile("user-1", [mockJobs[0]]);
     expect(upsertScore).toHaveBeenCalledWith({
