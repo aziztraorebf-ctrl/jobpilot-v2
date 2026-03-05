@@ -18,6 +18,8 @@ interface JobsPageClientProps {
   initialSeenIds: { id: string; seen_at: string }[];
   title: string;
   initialRemainingSearches: number;
+  rotationProfiles: Array<{ resume_id: string | null; keywords: string[]; label: string }> | null;
+  jobIdsByResumeId: Record<string, string[]>;
 }
 
 export function JobsPageClient({
@@ -28,6 +30,8 @@ export function JobsPageClient({
   initialSeenIds,
   title,
   initialRemainingSearches,
+  rotationProfiles,
+  jobIdsByResumeId,
 }: JobsPageClientProps) {
   const t = useTranslations("jobs");
 
@@ -37,6 +41,7 @@ export function JobsPageClient({
   const [isSearching, setIsSearching] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
   const [scoreMap, setScoreMap] = useState<Record<string, number>>(initialScoreMap);
+  const [activeProfileFilter, setActiveProfileFilter] = useState<string | "all">("all");
 
   // Called when a job is dismissed from the active list
   const handleJobDismissed = useCallback((jobId: string, job: JobRow) => {
@@ -108,6 +113,18 @@ export function JobsPageClient({
     }
   }, [t]);
 
+  // Filter jobs by active profile when a profile tab is selected
+  const filteredJobs = activeProfileFilter === "all" || !rotationProfiles
+    ? initialJobs
+    : initialJobs.filter((job) => {
+        const profile = rotationProfiles!.find(
+          (_p, i) => `profile-${i}` === activeProfileFilter
+        );
+        if (!profile || !profile.resume_id) return false;
+        const ids = jobIdsByResumeId[profile.resume_id] ?? [];
+        return ids.includes(job.id);
+      });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -148,6 +165,35 @@ export function JobsPageClient({
           </span>
         </div>
       </div>
+      {rotationProfiles && rotationProfiles.length >= 2 && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveProfileFilter("all")}
+            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+              activeProfileFilter === "all"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {t("all")}
+          </button>
+          {rotationProfiles.map((profile, i) => (
+            <button
+              type="button"
+              key={`profile-${i}`}
+              onClick={() => setActiveProfileFilter(`profile-${i}`)}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                activeProfileFilter === `profile-${i}`
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+              }`}
+            >
+              {profile.label}
+            </button>
+          ))}
+        </div>
+      )}
       <Tabs defaultValue="active">
         <TabsList>
           <TabsTrigger value="active">{t("active")}</TabsTrigger>
@@ -157,7 +203,7 @@ export function JobsPageClient({
         </TabsList>
         <TabsContent value="active" className="mt-4">
           <JobList
-            initialJobs={initialJobs}
+            initialJobs={filteredJobs}
             initialScoreMap={scoreMap}
             initialDismissedIds={dismissedIds}
             initialSeenIds={initialSeenIds}

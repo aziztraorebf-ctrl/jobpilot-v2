@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { TopJobs } from "@/components/dashboard/top-jobs";
 import { RecentApplications } from "@/components/dashboard/recent-applications";
+import { ActiveProfileBanner } from "@/components/dashboard/active-profile-banner";
 import {
   getApplicationStats,
   getJobs,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/supabase/queries";
 import type { ApplicationWithJob } from "@/lib/supabase/queries";
 import { requireUser } from "@/lib/supabase/get-user";
+import { getProfile } from "@/lib/supabase/queries/profiles";
 
 /**
  * Pick up to `limit` recent applications with varied statuses.
@@ -62,6 +64,14 @@ export default async function DashboardPage() {
     console.error("[DashboardPage] Failed to fetch scores:", error);
   }
 
+  let searchPreferences: Record<string, unknown> | null = null;
+  try {
+    const profile = await getProfile(user.id);
+    searchPreferences = (profile.search_preferences ?? null) as Record<string, unknown> | null;
+  } catch (error) {
+    console.error("[DashboardPage] Failed to fetch profile:", error);
+  }
+
   // Top 5 jobs by score
   const topJobs = [...jobs]
     .sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0))
@@ -73,6 +83,7 @@ export default async function DashboardPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       <h1 className="text-3xl font-bold">{t("title")}</h1>
+      <ActiveProfileBanner searchPreferences={searchPreferences} />
       <StatsCards stats={stats} />
       <TopJobs jobs={topJobs} scoreMap={scoreMap} />
       <RecentApplications applications={recentApps} />

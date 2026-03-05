@@ -25,6 +25,15 @@ export interface SearchPreferencesData {
   alert_new_jobs?: boolean;
   alert_follow_up?: boolean;
   alert_weekly_summary?: boolean;
+  rotation_profiles?: Array<{
+    resume_id: string | null;
+    keywords: string[];
+    label: string;
+  }>;
+  active_profile_index?: number;
+  rotation_enabled?: boolean;
+  rotation_days?: 1 | 2 | 3;
+  last_rotation_at?: string | null;
 }
 
 export interface ProfileData {

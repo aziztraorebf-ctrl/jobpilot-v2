@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { JobsPageClient } from "@/components/jobs/jobs-page-client";
 import { getJobs, getScoreMap, getDismissedJobIds, getDismissedJobs, getSeenJobIds, getManualSearchStatus } from "@/lib/supabase/queries";
+import { getProfile } from "@/lib/supabase/queries/profiles";
+import { getJobIdsByResumeId } from "@/lib/supabase/queries/scores";
 import { requireUser } from "@/lib/supabase/get-user";
 
 export default async function JobsPage() {
@@ -39,6 +41,36 @@ export default async function JobsPage() {
     // default to 3 on error
   }
 
+  // Compute rotation profiles and job IDs per profile for client-side filtering
+  interface RotationProfileEntry {
+    resume_id: string | null;
+    keywords: string[];
+    label: string;
+  }
+  let rotationProfiles: RotationProfileEntry[] | null = null;
+  let jobIdsByResumeId: Record<string, string[]> = {};
+
+  try {
+    const profile = await getProfile(user.id);
+    const prefs = (profile.search_preferences ?? {}) as Record<string, unknown>;
+    const profiles = prefs.rotation_profiles as RotationProfileEntry[] | undefined;
+    if (profiles && profiles.length >= 2) {
+      rotationProfiles = profiles;
+      // Pre-compute job IDs for each profile that has a resume_id
+      const resumeIds = profiles
+        .map((p) => p.resume_id)
+        .filter((id): id is string => id !== null);
+      const results = await Promise.all(
+        resumeIds.map((rid) => getJobIdsByResumeId(user.id, rid).catch(() => []))
+      );
+      resumeIds.forEach((rid, i) => {
+        jobIdsByResumeId[rid] = results[i];
+      });
+    }
+  } catch (error) {
+    console.error("[JobsPage] Failed to fetch rotation profiles:", error);
+  }
+
   return (
     <JobsPageClient
       initialJobs={jobs}
@@ -48,6 +80,8 @@ export default async function JobsPage() {
       initialSeenIds={seenIds}
       title={t("title")}
       initialRemainingSearches={remainingSearches}
+      rotationProfiles={rotationProfiles}
+      jobIdsByResumeId={jobIdsByResumeId}
     />
   );
 }

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { SearchPreferencesData } from "@/components/settings/settings-page-client";
+import { RotationProfilesSettings } from "@/components/settings/rotation-profiles-settings";
 
 interface SearchPreferencesProps {
   searchPreferences: SearchPreferencesData;
@@ -246,6 +247,28 @@ export function SearchPreferences({ searchPreferences }: SearchPreferencesProps)
           <Button onClick={handleSave} disabled={saving}>
             {saving ? t("saving") : t("saveChanges")}
           </Button>
+        </div>
+
+        {/* Rotation Profiles */}
+        <div className="border-t pt-6 dark:border-gray-700">
+          <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+            Rotation de profils
+          </h3>
+          <RotationProfilesSettings
+            searchPreferences={searchPreferences}
+            onSave={async (updates) => {
+              const res = await fetch("/api/profile", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  search_preferences: { ...searchPreferences, ...updates },
+                }),
+              });
+              if (!res.ok) {
+                throw new Error("Échec de la sauvegarde");
+              }
+            }}
+          />
         </div>
       </CardContent>
     </Card>

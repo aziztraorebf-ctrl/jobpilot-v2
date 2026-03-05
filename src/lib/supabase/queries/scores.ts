@@ -132,3 +132,21 @@ export async function getLatestScoreForJob(
 
   return data;
 }
+
+/**
+ * Returns job IDs that were scored using a specific resume, for the current user.
+ */
+export async function getJobIdsByResumeId(
+  userId: string,
+  resumeId: string
+): Promise<string[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("match_scores")
+    .select("job_listing_id")
+    .eq("user_id", userId)
+    .eq("resume_id", resumeId);
+
+  if (error) throw new Error(`Failed to fetch jobs by resume: ${error.message}`);
+  return (data ?? []).map((row) => row.job_listing_id);
+}
