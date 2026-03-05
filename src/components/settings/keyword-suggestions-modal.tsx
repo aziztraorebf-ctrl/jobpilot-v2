@@ -29,9 +29,9 @@ export function KeywordSuggestionsModal({
     setIsSaving(true);
     try {
       await onSave(selectedKeywords, remotePreference);
-      onClose();
     } finally {
       setIsSaving(false);
+      onClose();
     }
   }
 
@@ -39,6 +39,7 @@ export function KeywordSuggestionsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
         <button
+          type="button"
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
           aria-label="Fermer"
@@ -60,6 +61,7 @@ export function KeywordSuggestionsModal({
           <div className="mt-2 flex flex-wrap gap-2">
             {suggestions.keywords.map((kw) => (
               <button
+                type="button"
                 key={kw}
                 onClick={() => toggleKeyword(kw)}
                 className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
@@ -81,6 +83,7 @@ export function KeywordSuggestionsModal({
           <div className="mt-2 flex gap-2">
             {(["remote", "hybrid", "any"] as const).map((pref) => (
               <button
+                type="button"
                 key={pref}
                 onClick={() => setRemotePreference(pref)}
                 className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
@@ -97,6 +100,7 @@ export function KeywordSuggestionsModal({
 
         <div className="mt-6 flex justify-end gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="rounded-md px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
           >

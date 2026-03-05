@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ResumeRow } from "@/lib/supabase/queries";
 import type { ParsedResume } from "@/lib/schemas/ai-responses";
+import { KeywordSuggestionsSchema } from "@/lib/schemas/keyword-suggestions";
 import type { KeywordSuggestions } from "@/lib/schemas/keyword-suggestions";
 import { KeywordSuggestionsModal } from "./keyword-suggestions-modal";
 
@@ -272,8 +273,11 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
           body: JSON.stringify({ resumeId: resume.id }),
         });
         if (suggestRes.ok) {
-          const { suggestions: s } = await suggestRes.json() as { suggestions: KeywordSuggestions };
-          setSuggestions(s);
+          const json = await suggestRes.json() as { suggestions: unknown };
+          const parsed = KeywordSuggestionsSchema.safeParse(json.suggestions);
+          if (parsed.success) {
+            setSuggestions(parsed.data);
+          }
         }
       } catch {
         // suggestions are optional, silently ignore failures
