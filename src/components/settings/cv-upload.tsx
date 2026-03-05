@@ -15,6 +15,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { ResumeRow } from "@/lib/supabase/queries";
 import type { ParsedResume } from "@/lib/schemas/ai-responses";
+import type { KeywordSuggestions } from "@/lib/schemas/keyword-suggestions";
+import { KeywordSuggestionsModal } from "./keyword-suggestions-modal";
 
 interface CVUploadProps {
   resumes?: ResumeRow[];
@@ -196,6 +198,7 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [viewingResumeId, setViewingResumeId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<KeywordSuggestions | null>(null);
 
   const handleUpload = useCallback(async (file: File) => {
     setError(null);
@@ -260,6 +263,21 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
       );
       // Auto-open modal after analysis so user immediately sees what was extracted
       setViewingResumeId(resume.id);
+
+      // Fire-and-forget — don't block the UI if suggestions fail
+      try {
+        const suggestRes = await fetch("/api/ai/suggest-keywords", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resumeId: resume.id }),
+        });
+        if (suggestRes.ok) {
+          const { suggestions: s } = await suggestRes.json() as { suggestions: KeywordSuggestions };
+          setSuggestions(s);
+        }
+      } catch {
+        // suggestions are optional, silently ignore failures
+      }
     } catch {
       setError(t("analyzeError"));
     } finally {
@@ -289,6 +307,19 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
     ? resumes.find((r) => r.id === viewingResumeId) ?? null
     : null;
   const viewingParsed = viewingResume ? getParsedData(viewingResume) : null;
+
+  async function handleSaveSuggestions(
+    keywords: string[],
+    remotePreference: "remote" | "hybrid" | "any"
+  ) {
+    await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        search_preferences: { keywords, remote_preference: remotePreference },
+      }),
+    });
+  }
 
   return (
     <Card>
@@ -433,6 +464,14 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
           parsed={viewingParsed}
           open={viewingResumeId !== null}
           onClose={() => setViewingResumeId(null)}
+        />
+      )}
+
+      {suggestions && (
+        <KeywordSuggestionsModal
+          suggestions={suggestions}
+          onSave={handleSaveSuggestions}
+          onClose={() => setSuggestions(null)}
         />
       )}
     </Card>
