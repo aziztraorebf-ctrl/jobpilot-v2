@@ -41,12 +41,19 @@ export async function POST(request: Request) {
 
     const cv = resume.parsed_data as unknown as ParsedResume;
 
+    if (!cv.experience || !cv.skills) {
+      return NextResponse.json(
+        { error: "Resume data is stale, please re-analyze your CV" },
+        { status: 422 }
+      );
+    }
+
     const cvSummary = [
       `Name: ${cv.personal?.name ?? "Unknown"}`,
-      `Summary: ${cv.summary}`,
-      `Experience: ${cv.experience.map((e) => `${e.title} at ${e.company}`).join(", ")}`,
-      `Technical skills: ${cv.skills.technical.join(", ")}`,
-      `Soft skills: ${cv.skills.soft.join(", ")}`,
+      `Summary: ${cv.summary ?? ""}`,
+      `Experience: ${(cv.experience ?? []).map((e) => `${e.title} at ${e.company}`).join(", ")}`,
+      `Technical skills: ${(cv.skills.technical ?? []).join(", ")}`,
+      `Soft skills: ${(cv.skills.soft ?? []).join(", ")}`,
       `Certifications: ${(cv.certifications ?? []).join(", ")}`,
       `Location from CV: ${cv.personal?.location ?? "Not specified"}`,
     ].join("\n");
