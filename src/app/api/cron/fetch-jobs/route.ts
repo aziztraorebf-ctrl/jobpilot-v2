@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/services/email-service";
 import { render } from "@react-email/components";
 import { NewJobsAlert } from "@/emails/new-jobs-alert";
 import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-builder";
+import { getActiveSearchProfile, shouldRotate, getNextRotationIndex } from "@/lib/utils/search-profile-helpers";
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
 import { MIN_DISPLAY_SCORE } from "@/lib/config/scoring";
 import type { UnifiedJob } from "@/lib/schemas/job";
@@ -32,10 +33,28 @@ export async function GET(request: Request) {
     for (const profile of profiles) {
       try {
         const prefs = (profile.search_preferences ?? {}) as Record<string, unknown>;
-        const keywords = (prefs.keywords as string[] | undefined) ?? [];
         const locations = (prefs.locations as string[] | undefined) ?? [];
         const threshold = (prefs.alert_threshold as number | undefined) ?? 60;
-        const rotationIndex = (prefs.keyword_rotation_index as number | undefined) ?? 0;
+
+        // Auto-rotate profile if conditions are met (optimistic: best-effort, no strict locking needed for single-user app)
+        let currentPrefs = prefs;
+        if (shouldRotate(currentPrefs)) {
+          const profileArr = currentPrefs.rotation_profiles as unknown[] | undefined;
+          const currentIndex = typeof currentPrefs.active_profile_index === "number"
+            ? currentPrefs.active_profile_index : 0;
+          const nextIndex = getNextRotationIndex(currentIndex, (profileArr ?? []).length);
+          const rotatedPrefs = {
+            ...currentPrefs,
+            active_profile_index: nextIndex,
+            last_rotation_at: new Date().toISOString(),
+          };
+          await updateProfile(profile.id, { search_preferences: rotatedPrefs });
+          currentPrefs = rotatedPrefs;
+        }
+
+        const activeProfile = getActiveSearchProfile(currentPrefs);
+        const keywords = activeProfile.keywords;
+        const rotationIndex = (currentPrefs.keyword_rotation_index as number | undefined) ?? 0;
 
         if (keywords.length === 0) continue;
 
@@ -53,7 +72,7 @@ export async function GET(request: Request) {
         // Always advance rotation index, even if no results
         const newIndex = nextRotationIndex(keywords, rotationIndex);
         await updateProfile(profile.id, {
-          search_preferences: { ...prefs, keyword_rotation_index: newIndex },
+          search_preferences: { ...currentPrefs, keyword_rotation_index: newIndex },
         });
 
         if (uniqueJobs.length === 0) continue;
@@ -79,10 +98,13 @@ export async function GET(request: Request) {
             .map((j) => j.id);
 
           if (belowThresholdIds.length > 0) {
-            await supabase
+            const { error: deactivateError } = await supabase
               .from("job_listings")
               .update({ is_active: false })
               .in("id", belowThresholdIds);
+            if (deactivateError) {
+              console.error("[Cron fetch-jobs] Failed to deactivate low-score jobs:", deactivateError.message);
+            }
           }
         }
 

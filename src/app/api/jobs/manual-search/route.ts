@@ -8,6 +8,7 @@ import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { deduplicateJobs } from "@/lib/services/deduplicator";
 import { upsertJobs } from "@/lib/supabase/queries/jobs";
 import { buildSearchQueries, nextRotationIndex } from "@/lib/utils/search-query-builder";
+import { getActiveSearchProfile } from "@/lib/utils/search-profile-helpers";
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
 import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { apiError } from "@/lib/api/error-response";
@@ -34,7 +35,8 @@ export async function POST(_request: Request) {
 
     const profile = await getProfile(user.id);
     const prefs = (profile.search_preferences ?? {}) as Record<string, unknown>;
-    const keywords = (prefs.keywords as string[] | undefined) ?? [];
+    const activeProfile = getActiveSearchProfile(prefs);
+    const keywords = activeProfile.keywords;
     const locations = (prefs.locations as string[] | undefined) ?? [];
     const rotationIndex = (prefs.keyword_rotation_index as number | undefined) ?? 0;
 
