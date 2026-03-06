@@ -56,7 +56,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     // Delete record from DB
     await deleteResume(user.id, id);
 
-    revalidatePath("/[locale]/(app)/settings", "page");
+    revalidatePath("/", "layout");
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return apiError(error, "DELETE /api/resumes/[id]");

@@ -18,6 +18,7 @@ import type { ParsedResume } from "@/lib/schemas/ai-responses";
 import { KeywordSuggestionsSchema } from "@/lib/schemas/keyword-suggestions";
 import type { KeywordSuggestions } from "@/lib/schemas/keyword-suggestions";
 import { KeywordSuggestionsModal } from "./keyword-suggestions-modal";
+import { toast } from "sonner";
 
 interface CVUploadProps {
   resumes?: ResumeRow[];
@@ -316,13 +317,24 @@ export function CVUpload({ resumes: initialResumes = [] }: CVUploadProps) {
     keywords: string[],
     remotePreference: "remote" | "hybrid" | "any"
   ) {
-    await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        search_preferences: { keywords, remote_preference: remotePreference },
-      }),
-    });
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          search_preferences: { keywords, remote_preference: remotePreference },
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Échec de la sauvegarde");
+      }
+      toast.success(t("saveSuccess"));
+      // Reload so SearchPreferences tab reflects the newly saved keywords
+      window.location.reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de la sauvegarde");
+    }
   }
 
   return (
