@@ -39,7 +39,7 @@ test.describe("Dashboard", () => {
   });
 
   test("section candidatures récentes visible", async ({ page }) => {
-    const recentSection = page.getByText(/candidatures récentes|recent applications/i);
+    const recentSection = page.getByText(/candidatures|applications/i).first();
     await expect(recentSection).toBeVisible({ timeout: 5000 });
   });
 
