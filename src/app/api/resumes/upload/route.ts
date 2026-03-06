@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       is_primary: false,
     });
 
-    revalidatePath("/[locale]/(app)/settings", "page");
+    revalidatePath("/", "layout");
     return NextResponse.json(resume, { status: 201 });
   } catch (error: unknown) {
     return apiError(error, "POST /api/resumes/upload");
