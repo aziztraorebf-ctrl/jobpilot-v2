@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Authentication", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
   test("redirects unauthenticated user to login", async ({ page }) => {
     await page.goto("/fr/dashboard");
     await expect(page).toHaveURL(/\/login/);
