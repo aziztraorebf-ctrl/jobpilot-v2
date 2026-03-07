@@ -1,4 +1,5 @@
 import { createAuthClient } from "./auth-server";
+import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
 export async function getUser(): Promise<User | null> {
@@ -13,6 +14,6 @@ export async function getUser(): Promise<User | null> {
 
 export async function requireUser(): Promise<User> {
   const user = await getUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user) redirect("/fr/login");
   return user;
 }
