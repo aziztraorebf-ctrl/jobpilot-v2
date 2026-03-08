@@ -91,10 +91,11 @@ export async function GET(request: Request) {
 
         if (uniqueJobs.length === 0) continue;
 
-        // Tag each job with the active profile label for tracking
+        // Tag each job with the active profile label for tracking.
+        // ignoreDuplicates=true means existing jobs keep their original profile_label (first-fetch wins).
         const taggedJobs = uniqueJobs.map((job) => ({
           ...job,
-          profile_label: activeProfile.label,
+          profile_label: activeProfile.label || null,
         }));
 
         const inserted = await upsertJobs(taggedJobs);
