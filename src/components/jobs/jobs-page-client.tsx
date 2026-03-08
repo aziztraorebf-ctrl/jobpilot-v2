@@ -13,6 +13,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -120,8 +122,8 @@ export function JobsPageClient({
     }
   }, [t]);
 
-  const handleExportCsv = useCallback((days: number) => {
-    const params = new URLSearchParams({ days: String(days), minScore: "0" });
+  const handleExport = useCallback((days: number, format: "csv" | "json") => {
+    const params = new URLSearchParams({ days: String(days), minScore: "60", format });
     if (activeProfileFilter !== "all" && rotationProfiles) {
       const profile = rotationProfiles.find((_p, i) => `profile-${i}` === activeProfileFilter);
       if (profile) params.set("profile", profile.label);
@@ -164,8 +166,16 @@ export function JobsPageClient({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">CSV (Excel)</DropdownMenuLabel>
                 {[2, 3, 7, 14, 30].map((d) => (
-                  <DropdownMenuItem key={d} onClick={() => handleExportCsv(d)}>
+                  <DropdownMenuItem key={`csv-${d}`} onClick={() => handleExport(d, "csv")}>
+                    {d === 1 ? "Aujourd'hui" : `${d} derniers jours`}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">JSON (LLM)</DropdownMenuLabel>
+                {[2, 3, 7, 14, 30].map((d) => (
+                  <DropdownMenuItem key={`json-${d}`} onClick={() => handleExport(d, "json")}>
                     {d === 1 ? "Aujourd'hui" : `${d} derniers jours`}
                   </DropdownMenuItem>
                 ))}
