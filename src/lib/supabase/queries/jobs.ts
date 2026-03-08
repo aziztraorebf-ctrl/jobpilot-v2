@@ -282,7 +282,7 @@ export async function getSeenJobIds(userId: string): Promise<{ id: string; seen_
     throw new Error(`Failed to fetch seen jobs: ${error.message}`);
   }
 
-  return (data ?? []).map((row) => ({ id: row.job_listing_id, seen_at: row.seen_at ?? new Date().toISOString() }));
+  return (data ?? []).map((row) => ({ id: row.job_listing_id, seen_at: row.seen_at ?? "1970-01-01T00:00:00.000Z" }));
 }
 
 const UNSEEN_EXPIRY_DAYS = 7;
