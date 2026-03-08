@@ -129,7 +129,7 @@ export function JobsPageClient({
   }, []);
 
   // Filter jobs by active profile when a profile tab is selected
-  const totalFiltered = (activeProfileFilter === "all" || !rotationProfiles
+  const allFilteredJobs = activeProfileFilter === "all" || !rotationProfiles
     ? initialJobs
     : initialJobs.filter((job) => {
         const profile = rotationProfiles!.find(
@@ -138,18 +138,10 @@ export function JobsPageClient({
         if (!profile || !profile.resume_id) return false;
         const ids = jobIdsByResumeId[profile.resume_id] ?? [];
         return ids.includes(job.id);
-      })).length;
+      });
 
-  const filteredJobs = (activeProfileFilter === "all" || !rotationProfiles
-    ? initialJobs
-    : initialJobs.filter((job) => {
-        const profile = rotationProfiles!.find(
-          (_p, i) => `profile-${i}` === activeProfileFilter
-        );
-        if (!profile || !profile.resume_id) return false;
-        const ids = jobIdsByResumeId[profile.resume_id] ?? [];
-        return ids.includes(job.id);
-      })).slice(0, visibleCount);
+  const totalFiltered = allFilteredJobs.length;
+  const filteredJobs = allFilteredJobs.slice(0, visibleCount);
 
   return (
     <div className="p-6 space-y-6">
