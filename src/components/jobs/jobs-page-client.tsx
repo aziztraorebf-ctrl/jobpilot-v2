@@ -7,8 +7,14 @@ import { JobList } from "@/components/jobs/job-list";
 import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
 import type { JobRow } from "@/lib/supabase/queries";
 import { toast } from "sonner";
-import { RefreshCw, Loader2, Sparkles, Download } from "lucide-react";
+import { RefreshCw, Loader2, Sparkles, Download, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface JobsPageClientProps {
   initialJobs: JobRow[];
@@ -114,8 +120,8 @@ export function JobsPageClient({
     }
   }, [t]);
 
-  const handleExportCsv = useCallback(() => {
-    const params = new URLSearchParams({ days: "30", minScore: "0" });
+  const handleExportCsv = useCallback((days: number) => {
+    const params = new URLSearchParams({ days: String(days), minScore: "0" });
     if (activeProfileFilter !== "all" && rotationProfiles) {
       const profile = rotationProfiles.find((_p, i) => `profile-${i}` === activeProfileFilter);
       if (profile) params.set("profile", profile.label);
@@ -149,10 +155,22 @@ export function JobsPageClient({
         <h1 className="text-3xl font-bold">{title}</h1>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCsv} title="Exporter en CSV">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Exporter</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exporter</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {[2, 3, 7, 14, 30].map((d) => (
+                  <DropdownMenuItem key={d} onClick={() => handleExportCsv(d)}>
+                    {d === 1 ? "Aujourd'hui" : `${d} derniers jours`}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="outline"
               size="sm"

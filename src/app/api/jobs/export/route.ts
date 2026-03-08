@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/supabase/get-user";
+import { getUser } from "@/lib/supabase/get-user";
 import { getSupabase } from "@/lib/supabase/client";
 import { getScoreMap } from "@/lib/supabase/queries";
 import { generateJobsCsv } from "@/lib/utils/csv-export";
@@ -7,7 +7,10 @@ import { apiError } from "@/lib/api/error-response";
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     const daysRaw = parseInt(searchParams.get("days") ?? "30");
     const days = Math.min(isNaN(daysRaw) ? 30 : daysRaw, 30);
