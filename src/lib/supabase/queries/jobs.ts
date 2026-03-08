@@ -13,7 +13,8 @@ export interface JobFilters {
   remoteType?: JobRow["remote_type"];
   limit?: number;
   offset?: number;
-  inbox?: boolean; // If true: limit=15, ordered by fetched_at DESC (most recent first)
+  inbox?: boolean; // If true: fetch unseen/undismissed jobs only, ordered by fetched_at DESC
+  userId?: string; // Required when inbox=true to filter out seen/dismissed jobs
 }
 
 /**
@@ -71,6 +72,7 @@ export async function upsertJobs(jobs: UnifiedJob[]): Promise<JobRow[]> {
 /**
  * Fetch active job listings with optional filtering.
  * - is_active=true only
+ * - inbox=true: excludes already seen/dismissed jobs for userId, fetches up to 50 candidates
  * - search: ilike on title and company_name
  * - source: exact match
  * - remoteType: exact match on remote_type
@@ -80,8 +82,19 @@ export async function upsertJobs(jobs: UnifiedJob[]): Promise<JobRow[]> {
 export async function getJobs(filters?: JobFilters): Promise<JobRow[]> {
   const supabase = getSupabase();
   const inbox = filters?.inbox ?? false;
-  const limit = inbox ? 15 : (filters?.limit ?? 50);
+  // In inbox mode, fetch 50 candidates so the caller can sort by score and take top 15
+  const limit = inbox ? 50 : (filters?.limit ?? 50);
   const offset = filters?.offset ?? 0;
+
+  // In inbox mode, exclude jobs already seen or dismissed by this user
+  let excludeIds: string[] = [];
+  if (inbox && filters?.userId) {
+    const { data: seenRows } = await supabase
+      .from("seen_jobs")
+      .select("job_listing_id")
+      .eq("user_id", filters.userId);
+    excludeIds = (seenRows ?? []).map((r) => r.job_listing_id);
+  }
 
   let query = supabase
     .from("job_listings")
@@ -89,6 +102,10 @@ export async function getJobs(filters?: JobFilters): Promise<JobRow[]> {
     .eq("is_active", true)
     .order("fetched_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (excludeIds.length > 0) {
+    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  }
 
   if (filters?.source) {
     query = query.eq("source", filters.source);

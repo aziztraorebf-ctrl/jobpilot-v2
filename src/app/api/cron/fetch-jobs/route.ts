@@ -52,6 +52,20 @@ export async function GET(request: Request) {
           currentPrefs = rotatedPrefs;
         }
 
+        // Skip fetch if unseen active jobs already exceed the inbox limit
+        const inboxLimit = (prefs.inbox_limit as number | undefined) ?? 200;
+        const { count: unseenCount } = await supabase
+          .from("job_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .not("id", "in",
+            supabase.from("seen_jobs").select("job_listing_id").eq("user_id", profile.id)
+          );
+        if ((unseenCount ?? 0) >= inboxLimit) {
+          console.log(`[Cron fetch-jobs] Profile ${profile.id} inbox full (${unseenCount}/${inboxLimit}), skipping fetch`);
+          continue;
+        }
+
         const activeProfile = getActiveSearchProfile(currentPrefs);
         const keywords = activeProfile.keywords;
         const rotationIndex = (currentPrefs.keyword_rotation_index as number | undefined) ?? 0;

@@ -16,7 +16,7 @@ export default async function JobsPage() {
 
   try {
     [jobs, dismissedIds, dismissedJobs, seenIds] = await Promise.all([
-      getJobs({ inbox: true }),
+      getJobs({ inbox: true, userId: user.id }),
       getDismissedJobIds(user.id),
       getDismissedJobs(user.id),
       getSeenJobIds(user.id),
@@ -32,6 +32,11 @@ export default async function JobsPage() {
   } catch (error) {
     console.error("[JobsPage] Failed to fetch scores:", error);
   }
+
+  // Sort by score descending, keep top 15 — best matches first, not most recent
+  jobs = [...jobs]
+    .sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0))
+    .slice(0, 15);
 
   let remainingSearches = 3;
   try {
