@@ -294,7 +294,7 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
         .not(
           "id",
           "in",
-          supabase.from("seen_jobs").select("job_listing_id").eq("user_id", userId)
+          supabase.from("seen_jobs").select("job_listing_id").eq("user_id", userId).eq("dismissed", false)
         ),
 
       // 4. Average match score for the user
