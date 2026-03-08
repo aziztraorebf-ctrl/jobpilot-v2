@@ -7,7 +7,7 @@ import { JobList } from "@/components/jobs/job-list";
 import { DismissedJobs } from "@/components/jobs/dismissed-jobs";
 import type { JobRow } from "@/lib/supabase/queries";
 import { toast } from "sonner";
-import { RefreshCw, Loader2, Sparkles } from "lucide-react";
+import { RefreshCw, Loader2, Sparkles, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface JobsPageClientProps {
@@ -113,6 +113,15 @@ export function JobsPageClient({
     }
   }, [t]);
 
+  const handleExportCsv = useCallback(() => {
+    const params = new URLSearchParams({ days: "30", minScore: "0" });
+    if (activeProfileFilter !== "all" && rotationProfiles) {
+      const profile = rotationProfiles.find((_p, i) => `profile-${i}` === activeProfileFilter);
+      if (profile) params.set("profile", profile.label);
+    }
+    window.open(`/api/jobs/export?${params}`, "_blank");
+  }, [activeProfileFilter, rotationProfiles]);
+
   // Filter jobs by active profile when a profile tab is selected
   const filteredJobs = activeProfileFilter === "all" || !rotationProfiles
     ? initialJobs
@@ -131,6 +140,10 @@ export function JobsPageClient({
         <h1 className="text-3xl font-bold">{title}</h1>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} title="Exporter en CSV">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Exporter</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"

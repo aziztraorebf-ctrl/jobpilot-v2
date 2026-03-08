@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { generateApplicationsCsv } from "../csv-export";
+import { generateApplicationsCsv, generateJobsCsv } from "../csv-export";
+import type { JobForExport } from "../csv-export";
 
 const MOCK_APPLICATIONS = [
   {
@@ -89,5 +90,48 @@ describe("generateApplicationsCsv", () => {
     const csv = generateApplicationsCsv(apps);
     expect(csv).not.toContain("null");
     expect(csv).not.toContain("undefined");
+  });
+});
+
+describe("generateJobsCsv", () => {
+  const mockJobs: JobForExport[] = [
+    {
+      id: "1",
+      title: "Chef de projet",
+      company_name: "Acme Corp",
+      location: "Montreal, QC",
+      source_url: "https://example.com/job/1",
+      remote_type: "hybrid",
+      description: "Description du poste",
+      fetched_at: "2026-03-07T10:00:00.000Z",
+      score: 85,
+    },
+    {
+      id: "2",
+      title: 'Job with "quotes", and commas',
+      company_name: null,
+      location: null,
+      source_url: "https://example.com/job/2",
+      remote_type: "onsite",
+      description: null,
+      fetched_at: "2026-03-06T10:00:00.000Z",
+      score: 0,
+    },
+  ];
+
+  it("generates CSV with BOM and headers", () => {
+    const csv = generateJobsCsv(mockJobs);
+    expect(csv).toContain("Titre,Entreprise");
+    expect(csv).toContain("Chef de projet");
+  });
+
+  it("escapes special characters", () => {
+    const csv = generateJobsCsv(mockJobs);
+    expect(csv).toContain('"Job with ""quotes"", and commas"');
+  });
+
+  it("handles null fields gracefully", () => {
+    const csv = generateJobsCsv(mockJobs);
+    expect(csv).toContain("https://example.com/job/2");
   });
 });

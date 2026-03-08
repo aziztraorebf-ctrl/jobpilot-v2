@@ -42,6 +42,49 @@ function formatDate(iso: string): string {
   }
 }
 
+export interface JobForExport {
+  id: string;
+  title: string;
+  company_name: string | null;
+  location: string | null;
+  source_url: string;
+  remote_type: string | null;
+  description: string | null;
+  fetched_at: string;
+  score: number;
+}
+
+const JOB_HEADERS = [
+  "Titre",
+  "Entreprise",
+  "Localisation",
+  "Type",
+  "Score",
+  "URL",
+  "Date ajout",
+  "Description",
+];
+
+export function generateJobsCsv(jobs: JobForExport[]): string {
+  const lines: string[] = [JOB_HEADERS.join(",")];
+
+  for (const job of jobs) {
+    const row = [
+      escapeCsvValue(job.title),
+      escapeCsvValue(job.company_name),
+      escapeCsvValue(job.location),
+      escapeCsvValue(job.remote_type),
+      escapeCsvValue(String(job.score)),
+      escapeCsvValue(job.source_url),
+      escapeCsvValue(formatDate(job.fetched_at)),
+      escapeCsvValue(job.description),
+    ];
+    lines.push(row.join(","));
+  }
+
+  return lines.join("\n");
+}
+
 export function generateApplicationsCsv(
   applications: ApplicationForExport[]
 ): string {
