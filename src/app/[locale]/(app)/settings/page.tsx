@@ -50,7 +50,7 @@ export default async function SettingsPage() {
       profile={{
         full_name: profile.full_name,
         email: profile.email,
-        preferred_language: profile.preferred_language,
+        preferred_language: (profile.preferred_language ?? "fr") as "fr" | "en",
       }}
       searchPreferences={searchPreferences}
       resumes={resumes}

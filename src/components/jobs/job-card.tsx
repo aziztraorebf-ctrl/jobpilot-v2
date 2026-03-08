@@ -110,7 +110,7 @@ export function JobCard({ job, score, seenAt, onBookmark, onDismiss, onMarkSeen,
   const salaryText = formatSalary(
     job.salary_min,
     job.salary_max,
-    job.salary_currency
+    job.salary_currency ?? "CAD"
   );
   const isSeen = seenAt != null;
 
@@ -244,10 +244,10 @@ export function JobCard({ job, score, seenAt, onBookmark, onDismiss, onMarkSeen,
           <Badge
             className={cn(
               "border-transparent",
-              getRemoteBadgeClasses(job.remote_type)
+              getRemoteBadgeClasses((job.remote_type ?? "unknown") as "onsite" | "hybrid" | "remote" | "unknown")
             )}
           >
-            {t(getRemoteKey(job.remote_type))}
+            {t(getRemoteKey((job.remote_type ?? "unknown") as "onsite" | "hybrid" | "remote" | "unknown"))}
           </Badge>
 
           {/* Posted date */}
