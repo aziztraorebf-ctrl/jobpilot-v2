@@ -9,8 +9,10 @@ export async function GET(request: Request) {
   try {
     const user = await requireUser();
     const { searchParams } = new URL(request.url);
-    const days = Math.min(parseInt(searchParams.get("days") ?? "30"), 30);
-    const minScore = parseInt(searchParams.get("minScore") ?? "0");
+    const daysRaw = parseInt(searchParams.get("days") ?? "30");
+    const days = Math.min(isNaN(daysRaw) ? 30 : daysRaw, 30);
+    const minScoreRaw = parseInt(searchParams.get("minScore") ?? "0");
+    const minScore = isNaN(minScoreRaw) ? 0 : minScoreRaw;
     const profileLabel = searchParams.get("profile") ?? null;
 
     const supabase = getSupabase();
