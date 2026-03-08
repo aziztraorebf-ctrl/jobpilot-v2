@@ -1,4 +1,4 @@
-import { getPrimaryResume } from "@/lib/supabase/queries/resumes";
+import { getPrimaryResume, getResumeById } from "@/lib/supabase/queries/resumes";
 import { scoreMatch } from "@/lib/services/match-scorer";
 import { upsertScore } from "@/lib/supabase/queries/scores";
 import { extractCvData } from "@/lib/api/ai-route-helpers";
@@ -10,17 +10,20 @@ interface JobToScore {
 }
 
 /**
- * Scores a list of jobs against the user's primary resume.
+ * Scores a list of jobs against a specific resume (or the primary resume if none specified).
  * Returns a map of jobId -> overall_score for successfully scored jobs.
- * Skips gracefully if no primary resume or if individual jobs fail.
+ * Skips gracefully if no resume or if individual jobs fail.
  */
 export async function scoreJobsForProfile(
   userId: string,
-  jobs: JobToScore[]
+  jobs: JobToScore[],
+  resumeId?: string
 ): Promise<Record<string, number>> {
   if (jobs.length === 0) return {};
 
-  const resume = await getPrimaryResume(userId);
+  const resume = resumeId
+    ? await getResumeById(userId, resumeId)
+    : await getPrimaryResume(userId);
   if (!resume || !resume.parsed_data || typeof resume.parsed_data !== "object") {
     return {};
   }

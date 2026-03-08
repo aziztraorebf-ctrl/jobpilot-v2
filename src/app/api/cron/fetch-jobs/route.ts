@@ -96,13 +96,14 @@ export async function GET(request: Request) {
 
         if (inserted.length === 0) continue;
 
-        // Auto-score all inserted jobs against user's primary resume
+        // Auto-score all inserted jobs against the active rotation profile's resume (or primary)
+        const activeResumeId = activeProfile.resumeId ?? undefined;
         const jobsToScore = inserted.map((j) => ({
           id: j.id,
           description: j.description,
           title: j.title,
         }));
-        const scores = await scoreJobsForProfile(profile.id, jobsToScore);
+        const scores = await scoreJobsForProfile(profile.id, jobsToScore, activeResumeId);
 
         // Deactivate jobs below MIN_DISPLAY_SCORE (only when scoring produced results;
         // if scores is empty — no CV or total failure — keep all jobs active)
