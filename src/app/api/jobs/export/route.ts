@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { getSupabase } from "@/lib/supabase/client";
 import { getScoreMap } from "@/lib/supabase/queries";
 import { generateJobsCsv } from "@/lib/utils/csv-export";
+import { generateJobsJson } from "@/lib/utils/json-export";
 import { apiError } from "@/lib/api/error-response";
 
 export async function GET(request: Request) {
@@ -12,11 +13,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const { searchParams } = new URL(request.url);
-    const daysRaw = parseInt(searchParams.get("days") ?? "30");
-    const days = Math.min(isNaN(daysRaw) ? 30 : daysRaw, 30);
-    const minScoreRaw = parseInt(searchParams.get("minScore") ?? "0");
-    const minScore = isNaN(minScoreRaw) ? 0 : minScoreRaw;
+    const daysRaw = parseInt(searchParams.get("days") ?? "7");
+    const days = Math.min(isNaN(daysRaw) ? 7 : daysRaw, 30);
+    const minScoreRaw = parseInt(searchParams.get("minScore") ?? "60");
+    const minScore = isNaN(minScoreRaw) ? 60 : minScoreRaw;
     const profileLabel = searchParams.get("profile") ?? null;
+    const format = searchParams.get("format") ?? "csv"; // "csv" | "json"
 
     const supabase = getSupabase();
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
@@ -41,19 +43,52 @@ export async function GET(request: Request) {
 
     const filtered = (jobs ?? [])
       .filter((j) => j.fetched_at != null)
-      .map((j) => ({ ...j, fetched_at: j.fetched_at as string, score: scoreMap[j.id] ?? 0 }))
-      .filter((j) => j.score >= minScore);
+      .map((j) => ({
+        ...j,
+        fetched_at: j.fetched_at as string,
+        score: scoreMap[j.id] ?? 0,
+        profile_label: j.profile_label ?? null,
+      }))
+      .filter((j) => j.score >= minScore)
+      .sort((a, b) => b.score - a.score);
 
-    console.log(`[export] user=${user.id} days=${days} since=${since} jobs=${(jobs ?? []).length} filtered=${filtered.length} minScore=${minScore} scoreMapSize=${Object.keys(scoreMap).length}`);
+    // Sanitize profile name for filename (accents + special chars)
+    const profileSlug = profileLabel
+      ? profileLabel
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9-]/g, "-")
+          .toLowerCase()
+      : null;
+
+    const dateStr = new Date().toISOString().split("T")[0];
+    const baseFilename = [
+      "jobpilot",
+      `${days}j`,
+      profileSlug,
+      `${filtered.length}offres`,
+      dateStr,
+    ]
+      .filter(Boolean)
+      .join("-");
+
+    if (format === "json") {
+      const json = generateJobsJson(filtered);
+      return new NextResponse(json, {
+        headers: {
+          "Content-Type": "application/json;charset=utf-8;",
+          "Content-Disposition": `attachment; filename="${baseFilename}.json"`,
+        },
+      });
+    }
 
     const csv = generateJobsCsv(filtered);
     const bom = "\uFEFF";
-    const filename = `jobpilot-offres-${new Date().toISOString().split("T")[0]}.csv`;
 
     return new NextResponse(bom + csv, {
       headers: {
         "Content-Type": "text/csv;charset=utf-8;",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `attachment; filename="${baseFilename}.csv"`,
       },
     });
   } catch (error) {
