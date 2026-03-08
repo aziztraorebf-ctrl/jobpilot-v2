@@ -52,6 +52,7 @@ export interface JobForExport {
   description: string | null;
   fetched_at: string;
   score: number;
+  profile_label: string | null;
 }
 
 const JOB_HEADERS = [
@@ -60,6 +61,7 @@ const JOB_HEADERS = [
   "Localisation",
   "Type",
   "Score",
+  "Profil",
   "URL",
   "Date ajout",
   "Description",
@@ -75,6 +77,7 @@ export function generateJobsCsv(jobs: JobForExport[]): string {
       escapeCsvValue(job.location),
       escapeCsvValue(job.remote_type),
       escapeCsvValue(String(job.score)),
+      escapeCsvValue(job.profile_label),
       escapeCsvValue(job.source_url),
       escapeCsvValue(formatDate(job.fetched_at)),
       escapeCsvValue(job.description),
@@ -82,7 +85,7 @@ export function generateJobsCsv(jobs: JobForExport[]): string {
     lines.push(row.join(","));
   }
 
-  return lines.join("\n");
+  return lines.join("\r\n");
 }
 
 export function generateApplicationsCsv(

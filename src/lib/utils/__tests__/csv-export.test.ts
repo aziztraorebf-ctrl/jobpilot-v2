@@ -105,6 +105,7 @@ describe("generateJobsCsv", () => {
       description: "Description du poste",
       fetched_at: "2026-03-07T10:00:00.000Z",
       score: 85,
+      profile_label: null,
     },
     {
       id: "2",
@@ -116,6 +117,7 @@ describe("generateJobsCsv", () => {
       description: null,
       fetched_at: "2026-03-06T10:00:00.000Z",
       score: 0,
+      profile_label: null,
     },
   ];
 
