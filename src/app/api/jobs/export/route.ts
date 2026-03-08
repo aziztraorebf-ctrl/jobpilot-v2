@@ -44,6 +44,8 @@ export async function GET(request: Request) {
       .map((j) => ({ ...j, fetched_at: j.fetched_at as string, score: scoreMap[j.id] ?? 0 }))
       .filter((j) => j.score >= minScore);
 
+    console.log(`[export] user=${user.id} days=${days} since=${since} jobs=${(jobs ?? []).length} filtered=${filtered.length} minScore=${minScore} scoreMapSize=${Object.keys(scoreMap).length}`);
+
     const csv = generateJobsCsv(filtered);
     const bom = "\uFEFF";
     const filename = `jobpilot-offres-${new Date().toISOString().split("T")[0]}.csv`;
