@@ -41,6 +41,7 @@ function mapUnifiedJobToInsert(job: UnifiedJob): JobInsert {
     contract_type: job.contract_type,
     remote_type: job.remote_type,
     posted_at: job.posted_at,
+    profile_label: job.profile_label ?? null,
     raw_data: job.raw_data as Json,
   };
 }

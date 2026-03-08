@@ -63,6 +63,7 @@ export const UnifiedJobSchema = z.object({
     .enum(["onsite", "hybrid", "remote", "unknown"])
     .default("unknown"),
   posted_at: z.string().nullable(),
+  profile_label: z.string().nullable().optional(),
   raw_data: z.unknown(),
 });
 
