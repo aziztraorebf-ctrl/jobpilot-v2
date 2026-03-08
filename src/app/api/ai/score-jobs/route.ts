@@ -22,13 +22,19 @@ export async function POST(request: Request) {
       // No body or invalid JSON — use primary resume
     }
 
-    // Use specified resume, falling back to primary then most recent analyzed
-    let resume = resumeId
-      ? await getResumeById(user.id, resumeId)
-      : await getPrimaryResume(user.id);
-    if (!resume) {
-      const all = await getResumes(user.id);
-      resume = all.find((r) => r.parsed_data !== null) ?? null;
+    // Use specified resume; if resumeId given but not found, fail explicitly (no silent fallback)
+    let resume;
+    if (resumeId) {
+      resume = await getResumeById(user.id, resumeId);
+      if (!resume) {
+        return NextResponse.json({ error: "RESUME_NOT_FOUND", scored: 0 }, { status: 404 });
+      }
+    } else {
+      resume = await getPrimaryResume(user.id);
+      if (!resume) {
+        const all = await getResumes(user.id);
+        resume = all.find((r) => r.parsed_data !== null) ?? null;
+      }
     }
     if (!resume) {
       return NextResponse.json({ error: "NO_RESUME", scored: 0 }, { status: 400 });
