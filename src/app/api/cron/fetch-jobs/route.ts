@@ -91,7 +91,13 @@ export async function GET(request: Request) {
 
         if (uniqueJobs.length === 0) continue;
 
-        const inserted = await upsertJobs(uniqueJobs);
+        // Tag each job with the active profile label for tracking
+        const taggedJobs = uniqueJobs.map((job) => ({
+          ...job,
+          profile_label: activeProfile.label,
+        }));
+
+        const inserted = await upsertJobs(taggedJobs);
         totalInserted += inserted.length;
 
         if (inserted.length === 0) continue;
