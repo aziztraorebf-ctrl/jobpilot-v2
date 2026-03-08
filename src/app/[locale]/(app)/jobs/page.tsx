@@ -33,10 +33,10 @@ export default async function JobsPage() {
     console.error("[JobsPage] Failed to fetch scores:", error);
   }
 
-  // Sort by score descending, keep top 15 — best matches first, not most recent
+  // Sort by score descending, keep top 25 — best matches first, not most recent
   jobs = [...jobs]
     .sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0))
-    .slice(0, 15);
+    .slice(0, 25);
 
   let remainingSearches = 3;
   try {

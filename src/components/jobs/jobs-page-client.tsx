@@ -42,6 +42,7 @@ export function JobsPageClient({
   const [isScoring, setIsScoring] = useState(false);
   const [scoreMap, setScoreMap] = useState<Record<string, number>>(initialScoreMap);
   const [activeProfileFilter, setActiveProfileFilter] = useState<string | "all">("all");
+  const [visibleCount, setVisibleCount] = useState(15);
 
   // Called when a job is dismissed from the active list
   const handleJobDismissed = useCallback((jobId: string, job: JobRow) => {
@@ -122,8 +123,13 @@ export function JobsPageClient({
     window.open(`/api/jobs/export?${params}`, "_blank");
   }, [activeProfileFilter, rotationProfiles]);
 
+  const handleProfileFilterChange = useCallback((value: string) => {
+    setActiveProfileFilter(value);
+    setVisibleCount(15);
+  }, []);
+
   // Filter jobs by active profile when a profile tab is selected
-  const filteredJobs = activeProfileFilter === "all" || !rotationProfiles
+  const totalFiltered = (activeProfileFilter === "all" || !rotationProfiles
     ? initialJobs
     : initialJobs.filter((job) => {
         const profile = rotationProfiles!.find(
@@ -132,7 +138,18 @@ export function JobsPageClient({
         if (!profile || !profile.resume_id) return false;
         const ids = jobIdsByResumeId[profile.resume_id] ?? [];
         return ids.includes(job.id);
-      });
+      })).length;
+
+  const filteredJobs = (activeProfileFilter === "all" || !rotationProfiles
+    ? initialJobs
+    : initialJobs.filter((job) => {
+        const profile = rotationProfiles!.find(
+          (_p, i) => `profile-${i}` === activeProfileFilter
+        );
+        if (!profile || !profile.resume_id) return false;
+        const ids = jobIdsByResumeId[profile.resume_id] ?? [];
+        return ids.includes(job.id);
+      })).slice(0, visibleCount);
 
   return (
     <div className="p-6 space-y-6">
@@ -182,7 +199,7 @@ export function JobsPageClient({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setActiveProfileFilter("all")}
+            onClick={() => handleProfileFilterChange("all")}
             className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
               activeProfileFilter === "all"
                 ? "bg-blue-600 text-white"
@@ -195,7 +212,7 @@ export function JobsPageClient({
             <button
               type="button"
               key={`profile-${i}`}
-              onClick={() => setActiveProfileFilter(`profile-${i}`)}
+              onClick={() => handleProfileFilterChange(`profile-${i}`)}
               className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                 activeProfileFilter === `profile-${i}`
                   ? "bg-blue-600 text-white"
@@ -222,6 +239,16 @@ export function JobsPageClient({
             initialSeenIds={initialSeenIds}
             onJobDismissed={handleJobDismissed}
           />
+          {visibleCount < totalFiltered && (
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setVisibleCount((c) => c + 10)}
+              >
+                Charger plus ({totalFiltered - visibleCount} restants)
+              </Button>
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="dismissed" className="mt-4">
           <DismissedJobs

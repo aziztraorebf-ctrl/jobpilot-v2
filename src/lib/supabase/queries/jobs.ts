@@ -83,8 +83,8 @@ export async function upsertJobs(jobs: UnifiedJob[]): Promise<JobRow[]> {
 export async function getJobs(filters?: JobFilters): Promise<JobRow[]> {
   const supabase = getSupabase();
   const inbox = filters?.inbox ?? false;
-  // In inbox mode, fetch 50 candidates so the caller can sort by score and take top 15
-  const limit = inbox ? 50 : (filters?.limit ?? 50);
+  // In inbox mode, fetch 100 candidates so the caller can sort by score and take top 25
+  const limit = inbox ? 100 : (filters?.limit ?? 50);
   const offset = filters?.offset ?? 0;
 
   // In inbox mode, exclude jobs already seen or dismissed by this user
