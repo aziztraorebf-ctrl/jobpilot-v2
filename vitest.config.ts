@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    exclude: ["src/__integration__/**", "e2e/**", "node_modules/**"],
+    exclude: ["src/__integration__/**", "e2e/**", "node_modules/**", ".auto-claude/**"],
   },
   resolve: {
     alias: {
