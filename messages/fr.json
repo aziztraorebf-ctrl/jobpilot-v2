@@ -38,7 +38,7 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "activeJobs": "Offres disponibles",
+    "activeJobs": "Offres non vues",
     "avgScore": "Score moyen",
     "activeApps": "Candidatures actives",
     "upcomingInterviews": "Entrevues a venir",

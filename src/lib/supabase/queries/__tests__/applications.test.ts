@@ -446,6 +446,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: 5 },
       { data: null, error: null, count: 2 },
       { data: null, error: null, count: 15 },
+      { data: null, error: null },
       { data: [{ overall_score: 80 }, { overall_score: 90 }, { overall_score: 70 }], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -465,6 +466,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: 3 },
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 10 },
+      { data: null, error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -479,6 +481,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: 1 },
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
+      { data: null, error: null },
       { data: [{ overall_score: 73 }, { overall_score: 68 }], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -494,6 +497,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: null },
       { data: null, error: null, count: null },
       { data: null, error: null, count: null },
+      { data: null, error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -510,6 +514,7 @@ describe("getApplicationStats", () => {
       { data: null, error: { message: "DB timeout" }, count: null },
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
+      { data: null, error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -524,6 +529,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: 0 },
       { data: null, error: { message: "Permission denied" }, count: null },
       { data: null, error: null, count: 0 },
+      { data: null, error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -538,6 +544,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
       { data: null, error: { message: "Table not found" }, count: null },
+      { data: null, error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -552,6 +559,7 @@ describe("getApplicationStats", () => {
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
+      { data: null, error: null },
       { data: [], error: { message: "Schema mismatch" } },
     ]);
     useMock(mockGetSupabase, mockClient);

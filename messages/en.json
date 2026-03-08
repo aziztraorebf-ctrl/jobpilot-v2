@@ -38,7 +38,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "activeJobs": "Available Jobs",
+    "activeJobs": "Unseen Jobs",
     "avgScore": "Average Score",
     "activeApps": "Active Applications",
     "upcomingInterviews": "Upcoming Interviews",

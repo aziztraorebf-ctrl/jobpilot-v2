@@ -286,11 +286,16 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
         .eq("status", "interview")
         .gt("interview_at", now),
 
-      // 3. Active job listings right now
+      // 3. Unseen active job listings (active and not yet seen by the user)
       supabase
         .from("job_listings")
         .select("id", { count: "exact", head: true })
-        .eq("is_active", true),
+        .eq("is_active", true)
+        .not(
+          "id",
+          "in",
+          supabase.from("seen_jobs").select("job_listing_id").eq("user_id", userId)
+        ),
 
       // 4. Average match score for the user
       supabase
