@@ -441,13 +441,19 @@ describe("getApplicationStats", () => {
     vi.useRealTimers();
   });
 
+  // Query order: applications(count), interviews(count), seen_jobs(data), match_scores(data), job_listings(data - sequential)
+
   it("returns correct stats when all data is present", async () => {
+    // 3 seen jobs, 18 total active = 15 unseen
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: 5 },
       { data: null, error: null, count: 2 },
-      { data: null, error: null, count: 15 },
-      { data: null, error: null },
+      { data: [{ job_listing_id: "j1" }, { job_listing_id: "j2" }, { job_listing_id: "j3" }], error: null },
       { data: [{ overall_score: 80 }, { overall_score: 90 }, { overall_score: 70 }], error: null },
+      { data: [{ id: "j1" }, { id: "j2" }, { id: "j3" }, { id: "j4" }, { id: "j5" },
+               { id: "j6" }, { id: "j7" }, { id: "j8" }, { id: "j9" }, { id: "j10" },
+               { id: "j11" }, { id: "j12" }, { id: "j13" }, { id: "j14" }, { id: "j15" },
+               { id: "j16" }, { id: "j17" }, { id: "j18" }], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
 
@@ -456,7 +462,7 @@ describe("getApplicationStats", () => {
     expect(stats).toEqual({
       activeApplications: 5,
       upcomingInterviews: 2,
-      activeJobs: 15,
+      activeJobs: 15, // 18 total - 3 seen
       avgScore: 80,
     });
   });
@@ -465,9 +471,9 @@ describe("getApplicationStats", () => {
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: 3 },
       { data: null, error: null, count: 0 },
-      { data: null, error: null, count: 10 },
-      { data: null, error: null },
       { data: [], error: null },
+      { data: [], error: null },
+      { data: [{ id: "j1" }, { id: "j2" }], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
 
@@ -480,9 +486,9 @@ describe("getApplicationStats", () => {
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: 1 },
       { data: null, error: null, count: 0 },
-      { data: null, error: null, count: 0 },
-      { data: null, error: null },
+      { data: [], error: null },
       { data: [{ overall_score: 73 }, { overall_score: 68 }], error: null },
+      { data: [{ id: "j1" }], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
 
@@ -496,8 +502,8 @@ describe("getApplicationStats", () => {
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: null },
       { data: null, error: null, count: null },
-      { data: null, error: null, count: null },
       { data: null, error: null },
+      { data: [], error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -513,8 +519,8 @@ describe("getApplicationStats", () => {
     const mockClient = createMultiTableMock([
       { data: null, error: { message: "DB timeout" }, count: null },
       { data: null, error: null, count: 0 },
-      { data: null, error: null, count: 0 },
-      { data: null, error: null },
+      { data: [], error: null },
+      { data: [], error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -528,8 +534,8 @@ describe("getApplicationStats", () => {
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: 0 },
       { data: null, error: { message: "Permission denied" }, count: null },
-      { data: null, error: null, count: 0 },
-      { data: null, error: null },
+      { data: [], error: null },
+      { data: [], error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
@@ -539,18 +545,18 @@ describe("getApplicationStats", () => {
     );
   });
 
-  it("throws when new jobs query fails", async () => {
+  it("throws when seen jobs query fails", async () => {
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
-      { data: null, error: { message: "Table not found" }, count: null },
-      { data: null, error: null },
+      { data: null, error: { message: "Table not found" } },
+      { data: [], error: null },
       { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
 
     await expect(getApplicationStats(TEST_USER_ID)).rejects.toThrow(
-      "Failed to count active jobs: Table not found"
+      "Failed to fetch seen jobs: Table not found"
     );
   });
 
@@ -558,9 +564,9 @@ describe("getApplicationStats", () => {
     const mockClient = createMultiTableMock([
       { data: null, error: null, count: 0 },
       { data: null, error: null, count: 0 },
-      { data: null, error: null, count: 0 },
-      { data: null, error: null },
-      { data: [], error: { message: "Schema mismatch" } },
+      { data: [], error: null },
+      { data: null, error: { message: "Schema mismatch" } },
+      { data: [], error: null },
     ]);
     useMock(mockGetSupabase, mockClient);
 

@@ -268,8 +268,8 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
   const supabase = getSupabase();
   const now = new Date().toISOString();
 
-  // Run all four queries in parallel for performance
-  const [activeResult, interviewResult, newJobsResult, avgScoreResult] =
+  // Run queries in parallel for performance
+  const [activeResult, interviewResult, seenResult, avgScoreResult] =
     await Promise.all([
       // 1. Active applications (not closed)
       supabase
@@ -286,16 +286,11 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
         .eq("status", "interview")
         .gt("interview_at", now),
 
-      // 3. Unseen active job listings (active and not yet seen by the user)
+      // 3. Seen job IDs for this user (to exclude from unseen count)
       supabase
-        .from("job_listings")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true)
-        .not(
-          "id",
-          "in",
-          supabase.from("seen_jobs").select("job_listing_id").eq("user_id", userId).eq("dismissed", false)
-        ),
+        .from("seen_jobs")
+        .select("job_listing_id")
+        .eq("user_id", userId),
 
       // 4. Average match score for the user
       supabase
@@ -305,27 +300,30 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
         .limit(1000),
     ]);
 
-  // Check for errors on each query
+  // Check for errors
   if (activeResult.error) {
-    throw new Error(
-      `Failed to count active applications: ${activeResult.error.message}`
-    );
+    throw new Error(`Failed to count active applications: ${activeResult.error.message}`);
   }
   if (interviewResult.error) {
-    throw new Error(
-      `Failed to count upcoming interviews: ${interviewResult.error.message}`
-    );
+    throw new Error(`Failed to count upcoming interviews: ${interviewResult.error.message}`);
   }
-  if (newJobsResult.error) {
-    throw new Error(
-      `Failed to count active jobs: ${newJobsResult.error.message}`
-    );
+  if (seenResult.error) {
+    throw new Error(`Failed to fetch seen jobs: ${seenResult.error.message}`);
   }
   if (avgScoreResult.error) {
-    throw new Error(
-      `Failed to fetch match scores: ${avgScoreResult.error.message}`
-    );
+    throw new Error(`Failed to fetch match scores: ${avgScoreResult.error.message}`);
   }
+
+  // Count unseen active jobs: fetch all active IDs, exclude seen ones
+  const seenIds = new Set((seenResult.data ?? []).map((r) => r.job_listing_id));
+  const { data: activeJobIds, error: activeJobsError } = await supabase
+    .from("job_listings")
+    .select("id")
+    .eq("is_active", true);
+  if (activeJobsError) {
+    throw new Error(`Failed to count active jobs: ${activeJobsError.message}`);
+  }
+  const unseenCount = (activeJobIds ?? []).filter((j) => !seenIds.has(j.id)).length;
 
   // Compute average score (0 if no scores exist)
   const scores = avgScoreResult.data ?? [];
@@ -345,7 +343,7 @@ export async function getApplicationStats(userId: string): Promise<DashboardStat
   return {
     activeApplications: activeResult.count ?? 0,
     upcomingInterviews: interviewResult.count ?? 0,
-    activeJobs: newJobsResult.count ?? 0,
+    activeJobs: unseenCount,
     avgScore,
   };
 }
