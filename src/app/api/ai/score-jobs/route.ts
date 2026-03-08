@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/get-user";
 import { getSupabase } from "@/lib/supabase/client";
-import { getPrimaryResume, getResumes } from "@/lib/supabase/queries/resumes";
+import { getPrimaryResume, getResumes, getResumeById } from "@/lib/supabase/queries/resumes";
 import { upsertScore } from "@/lib/supabase/queries/scores";
 import { scoreMatch } from "@/lib/services/match-scorer";
 import { extractCvData } from "@/lib/api/ai-route-helpers";
@@ -9,12 +9,23 @@ import { apiError } from "@/lib/api/error-response";
 
 const BATCH_SIZE = 5;
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const user = await requireUser();
 
-    // Use primary resume, falling back to the most recent analyzed resume
-    let resume = await getPrimaryResume(user.id);
+    // Parse optional resumeId from body
+    let resumeId: string | undefined;
+    try {
+      const body = await request.json();
+      resumeId = typeof body?.resumeId === "string" ? body.resumeId : undefined;
+    } catch {
+      // No body or invalid JSON — use primary resume
+    }
+
+    // Use specified resume, falling back to primary then most recent analyzed
+    let resume = resumeId
+      ? await getResumeById(user.id, resumeId)
+      : await getPrimaryResume(user.id);
     if (!resume) {
       const all = await getResumes(user.id);
       resume = all.find((r) => r.parsed_data !== null) ?? null;
