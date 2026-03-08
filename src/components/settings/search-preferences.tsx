@@ -260,9 +260,7 @@ export function SearchPreferences({ searchPreferences }: SearchPreferencesProps)
               const res = await fetch("/api/profile", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  search_preferences: { ...searchPreferences, ...updates },
-                }),
+                body: JSON.stringify({ search_preferences: updates }),
               });
               if (!res.ok) {
                 throw new Error("Échec de la sauvegarde");
