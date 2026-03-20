@@ -4,9 +4,8 @@ import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { apiError } from "@/lib/api/error-response";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
-import { upsertJobs, getProfile } from "@/lib/supabase/queries";
+import { upsertJobs, getProfile, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
 import { parseSearchPreferences } from "@/types/search-preferences";
-import { USER_ID } from "@/lib/supabase/constants";
 
 const MAX_JOBS_TO_SCORE = 5;
 
@@ -40,7 +39,12 @@ export async function POST(request: Request) {
     }
 
     // Load profile preferences as fallback
-    const profile = await getProfile(USER_ID);
+    const profiles = await getProfilesWithAutoSearch();
+    if (profiles.length === 0) {
+      return NextResponse.json({ error: "No profiles found" }, { status: 404 });
+    }
+    const userId = profiles[0].id;
+    const profile = await getProfile(userId);
     const prefs = parseSearchPreferences(profile.search_preferences);
 
     const keywords = body?.keywords ?? prefs.keywords.join(" ");
@@ -76,7 +80,7 @@ export async function POST(request: Request) {
       title: j.title,
     }));
 
-    const scores = await scoreJobsForProfile(USER_ID, jobsForScoring);
+    const scores = await scoreJobsForProfile(userId, jobsForScoring);
 
     const topMatches = toScore
       .filter((j) => scores[j.dedup_hash] !== undefined)

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { apiError } from "@/lib/api/error-response";
-import { getProfile, getStaleApplications } from "@/lib/supabase/queries";
+import { getProfile, getStaleApplications, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
 import { getDashboardCounts, getRecentJobCount } from "@/lib/supabase/queries/cowork";
 import { parseSearchPreferences } from "@/types/search-preferences";
-import { USER_ID } from "@/lib/supabase/constants";
 
 export async function GET(request: Request) {
   if (!verifyCronSecret(request)) {
@@ -12,11 +11,17 @@ export async function GET(request: Request) {
   }
 
   try {
+    const profiles = await getProfilesWithAutoSearch();
+    if (profiles.length === 0) {
+      return NextResponse.json({ error: "No profiles found" }, { status: 404 });
+    }
+    const userId = profiles[0].id;
+
     const [profile, counts, recentJobs, stale] = await Promise.all([
-      getProfile(USER_ID),
-      getDashboardCounts(USER_ID),
+      getProfile(userId),
+      getDashboardCounts(userId),
       getRecentJobCount(24),
-      getStaleApplications(USER_ID, 7),
+      getStaleApplications(userId, 7),
     ]);
 
     const prefs = parseSearchPreferences(profile.search_preferences);
