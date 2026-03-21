@@ -81,6 +81,20 @@ export const ATS_TYPES = [
 ] as const;
 export type AtsType = (typeof ATS_TYPES)[number];
 
+export interface ApplicationForAgent {
+  id: string;
+  job_title: string;
+  company: string | null;
+  apply_url: string;
+  ats_type: AtsType | null;
+  cover_letter: string | null;
+  resume_file_path: string | null;
+  resume_signed_url: string | null;
+  status: AgentStatus;
+  notes: string | null;
+}
+
+
 // Select string reused across queries that join job_listings
 const APPLICATION_WITH_JOB_SELECT = `
   id,
@@ -427,4 +441,115 @@ export async function getWeeklyStats(
     appliedCount: rows.filter((r) => r.status === "applied").length,
     interviewCount: rows.filter((r) => r.status === "interview").length,
   };
+}
+
+/**
+ * Fetch all applications with agent_status = 'ready', joined with
+ * job listing data, cover letter content, and resume signed URL.
+ * Called exclusively by the agent endpoint (Bearer auth).
+ */
+export async function getReadyApplicationsForAgent(): Promise<ApplicationForAgent[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("applications")
+    .select(`
+      id,
+      agent_status,
+      agent_notes,
+      ats_type,
+      resume_id,
+      job_listings (
+        title,
+        company_name,
+        source_url
+      ),
+      cover_letters (
+        content
+      ),
+      resumes (
+        file_path
+      )
+    `)
+    .eq("agent_status", "ready")
+    .returns<Array<{
+      id: string;
+      agent_status: string;
+      agent_notes: string | null;
+      ats_type: string | null;
+      resume_id: string | null;
+      job_listings: { title: string; company_name: string | null; source_url: string } | null;
+      cover_letters: { content: string } | null;
+      resumes: { file_path: string } | null;
+    }>>();
+
+  if (error) {
+    throw new Error(`Failed to fetch ready applications: ${error.message}`);
+  }
+
+  const rows = data ?? [];
+
+  // Générer les URLs signées pour les CVs en parallèle
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      let resumeSignedUrl: string | null = null;
+
+      if (row.resumes?.file_path) {
+        const { data: signedData } = await supabase.storage
+          .from("resumes")
+          .createSignedUrl(row.resumes.file_path, 10800); // 3h
+        resumeSignedUrl = signedData?.signedUrl ?? null;
+      }
+
+      return {
+        id: row.id,
+        job_title: row.job_listings?.title ?? "Titre inconnu",
+        company: row.job_listings?.company_name ?? null,
+        apply_url: row.job_listings?.source_url ?? "",
+        ats_type: (row.ats_type as AtsType) ?? null,
+        cover_letter: row.cover_letters?.content ?? null,
+        resume_file_path: row.resumes?.file_path ?? null,
+        resume_signed_url: resumeSignedUrl,
+        status: (row.agent_status as AgentStatus) ?? "ready",
+        notes: row.agent_notes,
+      } satisfies ApplicationForAgent;
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Update agent_status (and optionally agent_notes) on an application.
+ * Called by the agent after each submission attempt.
+ * No user_id scoping — authenticated by Bearer token at route level.
+ * Sets applied_at = now when agent_status = 'submitted'.
+ */
+export async function updateAgentStatus(
+  id: string,
+  agentStatus: AgentStatus,
+  agentNotes?: string
+): Promise<void> {
+  if (!id) throw new Error("Application ID is required");
+
+  const supabase = getSupabase();
+  const updates: {
+    agent_status: AgentStatus;
+    agent_notes?: string;
+    applied_at?: string;
+  } = {
+    agent_status: agentStatus,
+  };
+
+  if (agentNotes !== undefined) updates.agent_notes = agentNotes;
+  if (agentStatus === "submitted") updates.applied_at = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("applications")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Failed to update agent status: ${error.message}`);
+  }
 }
