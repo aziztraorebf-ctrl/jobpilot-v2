@@ -103,11 +103,11 @@ export type Database = {
       applications: {
         Row: {
           agent_notes: string | null
-          agent_status: string | null
+          agent_status: 'pending' | 'ready' | 'submitted' | 'failed' | 'needs_review' | null
           application_method: string | null
           application_url: string | null
           applied_at: string | null
-          ats_type: string | null
+          ats_type: 'linkedin' | 'indeed' | 'workday' | 'greenhouse' | 'lever' | 'other' | null
           closed_at: string | null
           cover_letter_id: string | null
           created_at: string | null
@@ -130,11 +130,11 @@ export type Database = {
         }
         Insert: {
           agent_notes?: string | null
-          agent_status?: string | null
+          agent_status?: 'pending' | 'ready' | 'submitted' | 'failed' | 'needs_review' | null
           application_method?: string | null
           application_url?: string | null
           applied_at?: string | null
-          ats_type?: string | null
+          ats_type?: 'linkedin' | 'indeed' | 'workday' | 'greenhouse' | 'lever' | 'other' | null
           closed_at?: string | null
           cover_letter_id?: string | null
           created_at?: string | null
@@ -157,11 +157,11 @@ export type Database = {
         }
         Update: {
           agent_notes?: string | null
-          agent_status?: string | null
+          agent_status?: 'pending' | 'ready' | 'submitted' | 'failed' | 'needs_review' | null
           application_method?: string | null
           application_url?: string | null
           applied_at?: string | null
-          ats_type?: string | null
+          ats_type?: 'linkedin' | 'indeed' | 'workday' | 'greenhouse' | 'lever' | 'other' | null
           closed_at?: string | null
           cover_letter_id?: string | null
           created_at?: string | null
