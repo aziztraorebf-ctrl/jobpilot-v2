@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       if (profiles.length === 0) {
         return NextResponse.json({ error: "No profiles found" }, { status: 404 });
       }
-      userId = profiles[0].user_id;
+      userId = profiles[0].id;
     } else {
       const user = await getUser();
       if (!user) {
