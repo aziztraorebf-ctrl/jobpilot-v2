@@ -1,16 +1,30 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { getSupabase } from "@/lib/supabase/client";
-import { getScoreMap } from "@/lib/supabase/queries";
+import { getScoreMap, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
 import { generateJobsCsv } from "@/lib/utils/csv-export";
 import { generateJobsJson } from "@/lib/utils/json-export";
 import { apiError } from "@/lib/api/error-response";
 
 export async function GET(request: Request) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = process.env.CRON_SECRET;
+    const isCronCall = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+    let userId: string;
+    if (isCronCall) {
+      const profiles = await getProfilesWithAutoSearch();
+      if (profiles.length === 0) {
+        return NextResponse.json({ error: "No profiles found" }, { status: 404 });
+      }
+      userId = profiles[0].user_id;
+    } else {
+      const user = await getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      userId = user.id;
     }
     const { searchParams } = new URL(request.url);
     const daysRaw = parseInt(searchParams.get("days") ?? "7");
@@ -39,7 +53,7 @@ export async function GET(request: Request) {
     if (error) throw new Error(error.message);
 
     const jobIds = (jobs ?? []).map((j) => j.id);
-    const scoreMap = jobIds.length > 0 ? await getScoreMap(user.id, jobIds) : {};
+    const scoreMap = jobIds.length > 0 ? await getScoreMap(userId, jobIds) : {};
 
     const filtered = (jobs ?? [])
       .filter((j) => j.fetched_at != null)
