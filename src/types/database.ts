@@ -102,9 +102,12 @@ export type Database = {
       }
       applications: {
         Row: {
+          agent_notes: string | null
+          agent_status: string | null
           application_method: string | null
           application_url: string | null
           applied_at: string | null
+          ats_type: string | null
           closed_at: string | null
           cover_letter_id: string | null
           created_at: string | null
@@ -126,9 +129,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_notes?: string | null
+          agent_status?: string | null
           application_method?: string | null
           application_url?: string | null
           applied_at?: string | null
+          ats_type?: string | null
           closed_at?: string | null
           cover_letter_id?: string | null
           created_at?: string | null
@@ -150,9 +156,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_notes?: string | null
+          agent_status?: string | null
           application_method?: string | null
           application_url?: string | null
           applied_at?: string | null
+          ats_type?: string | null
           closed_at?: string | null
           cover_letter_id?: string | null
           created_at?: string | null
