@@ -25,6 +25,9 @@ export interface ApplicationWithJob {
   salary_offered: number | null;
   created_at: string;
   updated_at: string;
+  agent_status: AgentStatus | null;
+  ats_type: AtsType | null;
+  agent_notes: string | null;
   job_listings: {
     id: string;
     title: string;
@@ -59,6 +62,25 @@ export const APPLICATION_STATUSES = [
 /** Union type derived from APPLICATION_STATUSES. */
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
+export const AGENT_STATUSES = [
+  "pending",
+  "ready",
+  "submitted",
+  "failed",
+  "needs_review",
+] as const;
+export type AgentStatus = (typeof AGENT_STATUSES)[number];
+
+export const ATS_TYPES = [
+  "linkedin",
+  "indeed",
+  "workday",
+  "greenhouse",
+  "lever",
+  "other",
+] as const;
+export type AtsType = (typeof ATS_TYPES)[number];
+
 // Select string reused across queries that join job_listings
 const APPLICATION_WITH_JOB_SELECT = `
   id,
@@ -75,6 +97,9 @@ const APPLICATION_WITH_JOB_SELECT = `
   salary_offered,
   created_at,
   updated_at,
+  agent_status,
+  ats_type,
+  agent_notes,
   job_listings (
     id,
     title,
