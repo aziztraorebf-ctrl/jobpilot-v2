@@ -56,7 +56,7 @@ L'app etait concue pour un usage mixte (manuel + automatise). Maintenant elle es
 Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et Tier 2 sont corriges. Reste le Tier 3 (opportunites d'automatisation) :
 
 - ~~`/api/cowork/next-actions` — endpoint qui dit a l'agent quoi faire~~ DONE
-- Score refresh apres changement CV
+- ~~Score refresh apres changement CV~~ DONE
 - Stale application escalation auto
 - Source health monitoring
 - Keyword effectiveness tracking
@@ -95,7 +95,7 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ### Moyenne
 - **[UX-3] Lettres de motivation par offre** : API existe, pas d'UI.
-- **Score refresh apres changement CV** : Scores figes sur ancien CV.
+- ~~**Score refresh apres changement CV**~~ : FAIT. Fire-and-forget re-scoring dans analyze-cv, cap 10 jobs, 4 tests.
 - **Stale application escalation** : Auto-needs_review apres 14j, auto-rejected apres 30j.
 
 ### Basse
@@ -116,6 +116,6 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ## Prochaine Action
 
-**Quoi** : UX-3 (lettres de motivation par offre) ou Score refresh apres changement CV
-**Pourquoi** : UX-4 et next-actions sont faits. UX-3 est la prochaine feature a forte valeur produit (API existe, pas d'UI). Score refresh est un quick-win pour la coherence des scores.
-**Comment** : Pour UX-3, spec partielle dans BACKLOG.md. Pour score refresh, identifier le trigger (CV update) et relancer le scoring.
+**Quoi** : UX-3 (lettres de motivation par offre)
+**Pourquoi** : UX-4, next-actions et score-refresh sont faits. UX-3 est la prochaine feature a forte valeur produit (API existe, pas d'UI).
+**Comment** : Spec partielle dans BACKLOG.md. Bouton dans job-card, modale avec editeur, sauvegarder dans applications.cover_letter.
