@@ -35,4 +35,4 @@ export {
 } from "./resumes";
 export type { ResumeRow, ResumeInsert, ResumeUpdate } from "./resumes";
 
-export { getRecentJobCount, getDashboardCounts } from "./cowork";
+export { getRecentJobCount, getDashboardCounts, getUnseenJobCount, getTopScoredUnseenJobs } from "./cowork";
