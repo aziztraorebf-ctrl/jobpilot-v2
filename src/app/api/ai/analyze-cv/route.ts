@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/get-user";
 import { getSupabase } from "@/lib/supabase/client";
-import { getResumeById, updateResume } from "@/lib/supabase/queries";
+import { getResumeById, updateResume, getActiveJobsByIds } from "@/lib/supabase/queries";
+import { getJobIdsByResumeId } from "@/lib/supabase/queries/scores";
 import { parseCvText } from "@/lib/services/cv-parser";
+import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
 import type { Json } from "@/types/database";
 import { apiError } from "@/lib/api/error-response";
 import { enforceAiRateLimit, parseJsonBody } from "@/lib/api/ai-route-helpers";
+
+const MAX_RESCORE_JOBS = 10;
 
 const AnalyzeCvBody = z.union([
   z.object({ resumeId: z.string().uuid("resumeId must be a valid UUID") }),
@@ -79,8 +83,34 @@ export async function POST(request: Request) {
       });
     }
 
+    // Fire-and-forget: re-score active jobs previously scored with this resume
+    if (resumeId) {
+      refreshScoresForResume(user.id, resumeId).catch((err) => {
+        console.error("[analyze-cv] Score refresh failed:", err instanceof Error ? err.message : err);
+      });
+    }
+
     return NextResponse.json({ parsed, tokensUsed });
   } catch (error: unknown) {
     return apiError(error, "POST /api/ai/analyze-cv");
   }
+}
+
+async function refreshScoresForResume(userId: string, resumeId: string): Promise<void> {
+  const jobIds = await getJobIdsByResumeId(userId, resumeId);
+  if (jobIds.length === 0) return;
+
+  const activeJobs = await getActiveJobsByIds(jobIds);
+  if (activeJobs.length === 0) return;
+
+  // Cap to avoid Vercel timeout (60s). Remaining jobs re-scored by next cron.
+  const toRescore = activeJobs
+    .slice(0, MAX_RESCORE_JOBS)
+    .map((j) => ({ id: j.id, title: j.title, description: j.description }));
+
+  console.log(`[analyze-cv] Re-scoring ${toRescore.length}/${activeJobs.length} active jobs for resume ${resumeId}`);
+
+  await scoreJobsForProfile(userId, toRescore, resumeId);
+
+  console.log(`[analyze-cv] Score refresh complete for resume ${resumeId}`);
 }
