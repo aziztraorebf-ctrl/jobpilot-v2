@@ -7,7 +7,8 @@
 
 ## Dernier Commit
 
-`d1ef5a1` merge: fresh-jobs-pipeline + robustness tier1-tier2
+`8d0d3d3` chore: remove parasitic CLAUDE.md (latest)
+`bd8dfa9` merge: feat/cowork-next-actions
 
 ---
 
@@ -88,9 +89,9 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ## Backlog Features (par priorite)
 
-### Haute
-- **[UX-4] Modale detail score IA** : Spec complete dans BACKLOG.md. Prete a implementer.
-- ~~**Cowork next-actions endpoint**~~ : Implemente (`GET /api/cowork/next-actions`). 5 regles de priorite, context dashboard, 8 tests.
+### Haute — DONE
+- ~~**[UX-4] Modale detail score IA**~~ : FAIT. ScoreDetailModal + route GET /api/ai/match-score-detail + cablage job-card/job-list + i18n.
+- ~~**Cowork next-actions endpoint**~~ : FAIT. GET /api/cowork/next-actions — 5 regles de priorite, context dashboard, 8 tests.
 
 ### Moyenne
 - **[UX-3] Lettres de motivation par offre** : API existe, pas d'UI.
@@ -115,6 +116,6 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ## Prochaine Action
 
-**Quoi** : Implementer UX-4 (modale detail score IA)
-**Pourquoi** : Feature la plus specifiee et prete a go. next-actions est maintenant implemente.
-**Comment** : Spec complete dans docs/BACKLOG.md pour UX-4.
+**Quoi** : UX-3 (lettres de motivation par offre) ou Score refresh apres changement CV
+**Pourquoi** : UX-4 et next-actions sont faits. UX-3 est la prochaine feature a forte valeur produit (API existe, pas d'UI). Score refresh est un quick-win pour la coherence des scores.
+**Comment** : Pour UX-3, spec partielle dans BACKLOG.md. Pour score refresh, identifier le trigger (CV update) et relancer le scoring.
