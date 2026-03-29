@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   try {
     [stats, jobs, applications] = await Promise.all([
       getApplicationStats(user.id),
-      getJobs({ limit: 50 }),
+      getJobs({ inbox: true, userId: user.id, limit: 50 }),
       getApplications(user.id),
     ]);
   } catch (error) {
