@@ -60,26 +60,11 @@ export async function getDashboardCounts(userId: string) {
 
 /**
  * Count active jobs NOT yet seen/dismissed by the user.
+ * Uses server-side RPC to avoid PostgREST payload limits.
  */
 export async function getUnseenJobCount(userId: string): Promise<number> {
   const supabase = getSupabase();
-
-  const { data: seenRows } = await supabase
-    .from("seen_jobs")
-    .select("job_listing_id")
-    .eq("user_id", userId);
-  const seenIds = (seenRows ?? []).map((r) => r.job_listing_id);
-
-  let query = supabase
-    .from("job_listings")
-    .select("id", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  if (seenIds.length > 0) {
-    query = query.not("id", "in", `(${seenIds.join(",")})`);
-  }
-
-  const { count, error } = await query;
+  const { data, error } = await supabase.rpc("count_unseen_jobs", { p_user_id: userId });
   if (error) throw new Error(`Failed to count unseen jobs: ${error.message}`);
-  return count ?? 0;
+  return data ?? 0;
 }

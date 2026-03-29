@@ -658,7 +658,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_unscored_jobs: { Args: Record<PropertyKey, never>; Returns: number }
+      count_unseen_jobs: { Args: { p_user_id: string }; Returns: number }
+      expire_absolute_jobs: { Args: { p_days: number }; Returns: number }
+      expire_processed_jobs: { Args: { p_days: number }; Returns: number }
+      expire_unseen_jobs: { Args: { p_days: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never
