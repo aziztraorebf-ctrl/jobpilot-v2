@@ -54,7 +54,7 @@ L'app etait concue pour un usage mixte (manuel + automatise). Maintenant elle es
 
 Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et Tier 2 sont corriges. Reste le Tier 3 (opportunites d'automatisation) :
 
-- `/api/cowork/next-actions` — endpoint qui dit a l'agent quoi faire
+- ~~`/api/cowork/next-actions` — endpoint qui dit a l'agent quoi faire~~ DONE
 - Score refresh apres changement CV
 - Stale application escalation auto
 - Source health monitoring
@@ -90,7 +90,7 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ### Haute
 - **[UX-4] Modale detail score IA** : Spec complete dans BACKLOG.md. Prete a implementer.
-- **Cowork next-actions endpoint** : L'agent doit savoir quoi faire sans deviner.
+- ~~**Cowork next-actions endpoint**~~ : Implemente (`GET /api/cowork/next-actions`). 5 regles de priorite, context dashboard, 8 tests.
 
 ### Moyenne
 - **[UX-3] Lettres de motivation par offre** : API existe, pas d'UI.
@@ -115,6 +115,6 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ## Prochaine Action
 
-**Quoi** : Implementer UX-4 (modale detail score IA) ou le cowork next-actions endpoint
-**Pourquoi** : UX-4 est la feature la plus specifiee et prete a go. next-actions est le plus gros multiplicateur pour l'agent automatise.
-**Comment** : Spec complete dans docs/BACKLOG.md pour UX-4. Pour next-actions, creer un plan.
+**Quoi** : Implementer UX-4 (modale detail score IA)
+**Pourquoi** : Feature la plus specifiee et prete a go. next-actions est maintenant implemente.
+**Comment** : Spec complete dans docs/BACKLOG.md pour UX-4.
