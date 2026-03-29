@@ -288,71 +288,103 @@ export async function getSeenJobIds(userId: string): Promise<{ id: string; seen_
 
 const UNSEEN_EXPIRY_DAYS = 7;
 const ABSOLUTE_EXPIRY_DAYS = 30;
+const PROCESSED_EXPIRY_DAYS = 3;
 
 /**
- * Expire job listings that are too old:
- * - Unseen (no seen_jobs entry) + older than UNSEEN_EXPIRY_DAYS
- * - All jobs older than ABSOLUTE_EXPIRY_DAYS
- * Returns count of expired jobs.
+ * Expire job listings based on lifecycle:
+ * 1. Processed jobs (seen or dismissed) older than 3 days -> inactive
+ * 2. Unseen jobs (no seen_jobs entry) older than 7 days -> inactive
+ * 3. All jobs older than 30 days -> inactive (absolute)
+ *
+ * Jobs with active applications (saved/applying/applied/interview) are NEVER expired.
  */
 export async function expireOldJobs(): Promise<{ expired: number }> {
   const supabase = getSupabase();
   const now = new Date();
 
+  const processedCutoff = new Date(now.getTime() - PROCESSED_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const unseenCutoff = new Date(now.getTime() - UNSEEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const absoluteCutoff = new Date(now.getTime() - ABSOLUTE_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  // 1. Expire jobs older than 30 days (absolute)
-  const { error: absoluteError, count: absoluteCount } = await supabase
-    .from("job_listings")
-    .update({ is_active: false }, { count: "exact" })
-    .eq("is_active", true)
-    .lt("fetched_at", absoluteCutoff);
+  // Get job IDs with active applications (never expire these)
+  const { data: activeAppJobs } = await supabase
+    .from("applications")
+    .select("job_listing_id")
+    .in("status", ["saved", "applying", "applied", "interview", "offer"]);
+  const protectedIds = new Set((activeAppJobs ?? []).map((r) => r.job_listing_id));
 
-  if (absoluteError) {
-    throw new Error(`Failed to expire old jobs (absolute): ${absoluteError.message}`);
+  // 1. Expire processed jobs (seen or dismissed) older than PROCESSED_EXPIRY_DAYS
+  const { data: processedJobIds } = await supabase
+    .from("seen_jobs")
+    .select("job_listing_id")
+    .lt("seen_at", processedCutoff);
+  const processedIds = (processedJobIds ?? [])
+    .map((r) => r.job_listing_id)
+    .filter((id) => !protectedIds.has(id));
+
+  let processedExpired = 0;
+  if (processedIds.length > 0) {
+    const { count, error } = await supabase
+      .from("job_listings")
+      .update({ is_active: false }, { count: "exact" })
+      .eq("is_active", true)
+      .in("id", processedIds);
+    if (error) console.error("[expireOldJobs] processed:", error.message);
+    processedExpired = count ?? 0;
   }
 
-  // 2. Get IDs of jobs that have been seen (have an entry in seen_jobs)
-  const { data: seenJobIds, error: seenError } = await supabase
+  // 2. Expire unseen jobs older than UNSEEN_EXPIRY_DAYS
+  const { data: allSeenIds } = await supabase
     .from("seen_jobs")
     .select("job_listing_id");
+  const seenSet = new Set((allSeenIds ?? []).map((r) => r.job_listing_id));
+  const allProtected = new Set([...protectedIds, ...seenSet]);
 
-  if (seenError) {
-    throw new Error(`Failed to fetch seen job IDs: ${seenError.message}`);
-  }
+  // Get active jobs older than unseen cutoff that are NOT seen and NOT protected
+  const { data: oldUnseen } = await supabase
+    .from("job_listings")
+    .select("id")
+    .eq("is_active", true)
+    .lt("fetched_at", unseenCutoff);
+  const unseenToExpire = (oldUnseen ?? [])
+    .map((r) => r.id)
+    .filter((id) => !allProtected.has(id));
 
-  const seenIds = (seenJobIds ?? []).map((r) => r.job_listing_id);
-
-  let unseenExpiredCount = 0;
-  if (seenIds.length > 0) {
-    // Expire active jobs not in seen list, older than 7 days
-    const { error: unseenError, count } = await supabase
+  let unseenExpired = 0;
+  if (unseenToExpire.length > 0) {
+    const { count, error } = await supabase
       .from("job_listings")
       .update({ is_active: false }, { count: "exact" })
       .eq("is_active", true)
-      .lt("fetched_at", unseenCutoff)
-      .not("id", "in", `(${seenIds.join(",")})`);
+      .in("id", unseenToExpire);
+    if (error) console.error("[expireOldJobs] unseen:", error.message);
+    unseenExpired = count ?? 0;
+  }
 
-    if (unseenError) {
-      throw new Error(`Failed to expire unseen jobs: ${unseenError.message}`);
-    }
-    unseenExpiredCount = count ?? 0;
-  } else {
-    // No seen jobs at all — expire all unseen older than 7 days
-    const { error: unseenError, count } = await supabase
+  // 3. Absolute expiry: all jobs older than 30 days (except protected)
+  const { data: veryOld } = await supabase
+    .from("job_listings")
+    .select("id")
+    .eq("is_active", true)
+    .lt("fetched_at", absoluteCutoff);
+  const absoluteToExpire = (veryOld ?? [])
+    .map((r) => r.id)
+    .filter((id) => !protectedIds.has(id));
+
+  let absoluteExpired = 0;
+  if (absoluteToExpire.length > 0) {
+    const { count, error } = await supabase
       .from("job_listings")
       .update({ is_active: false }, { count: "exact" })
       .eq("is_active", true)
-      .lt("fetched_at", unseenCutoff);
-
-    if (unseenError) {
-      throw new Error(`Failed to expire unseen jobs: ${unseenError.message}`);
-    }
-    unseenExpiredCount = count ?? 0;
+      .in("id", absoluteToExpire);
+    if (error) console.error("[expireOldJobs] absolute:", error.message);
+    absoluteExpired = count ?? 0;
   }
 
-  return { expired: (absoluteCount ?? 0) + unseenExpiredCount };
+  const total = processedExpired + unseenExpired + absoluteExpired;
+  console.log(`[expireOldJobs] Expired: ${processedExpired} processed, ${unseenExpired} unseen, ${absoluteExpired} absolute`);
+  return { expired: total };
 }
 
 /**
