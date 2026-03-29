@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase/client";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { deduplicateJobs } from "@/lib/services/deduplicator";
-import { upsertJobs, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
+import { upsertJobs, getProfilesWithAutoSearch, markJobSeen } from "@/lib/supabase/queries";
 import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { sendEmail } from "@/lib/services/email-service";
 import { render } from "@react-email/components";
@@ -123,6 +123,16 @@ export async function GET(request: Request) {
             if (deactivateError) {
               console.error("[Cron fetch-jobs] Failed to deactivate low-score jobs:", deactivateError.message);
             }
+          }
+        }
+
+        // Auto-mark all scored jobs as "seen" so they cycle out of the inbox
+        const scoredJobIds = Object.keys(scores);
+        for (const jobId of scoredJobIds) {
+          try {
+            await markJobSeen(profile.id, jobId);
+          } catch {
+            // Non-blocking: seen tracking is best-effort
           }
         }
 
