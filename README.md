@@ -119,66 +119,108 @@ JobPilot automatise la recherche d'emploi en :
 - [x] /api/jobs/search (JSearch + Adzuna aggregation)
 - [x] /api/applications (CRUD)
 
-### Phase 7: Interactivite Avancee
-- [ ] Drag-and-drop Kanban (dnd-kit)
-- [ ] Auto-move pipeline sur candidature confirmee
-- [ ] Indicateur visuel "offre vue"
-- [ ] Corbeille offres dismisses (restauration)
-- [ ] Recherche par mots-cles libres
+### Phase 7: Interactivite Avancee -- COMPLETE
+- [x] Indicateur visuel "offre vue" (seen_jobs tracking)
+- [x] Corbeille offres dismisses (restauration, tab dans page Jobs)
+- [x] Recherche par mots-cles libres (search debounce)
+- [x] Toast notifications
 
-### Phase 8: Notifications + Email
-- [ ] Templates email responsifs (React Email)
-- [ ] Integration Resend
-- [ ] Cron recherche automatique (quotidien/hebdomadaire)
-- [ ] Alertes nouveaux matchs (seuil configurable, defaut 60)
-- [ ] Seuil minimum d'alerte dans Settings (slider/select)
-- [ ] Rappels suivi candidatures
-- [ ] Resume hebdomadaire
+### Phase 8: Notifications + Email -- COMPLETE
+- [x] Templates email responsifs (React Email, rich layouts)
+- [x] Integration Resend (envoi automatique)
+- [x] Cron recherche automatique (quotidien)
+- [x] Alertes nouveaux matchs (seuil configurable, defaut 60)
+- [x] Rappels suivi candidatures (stale applications 14j)
+- [x] Resume hebdomadaire
 
-### Phase 9: Deploiement + Polish
-- [ ] Vercel deployment
-- [ ] Variables d'environnement production
-- [ ] Tests E2E complets (Playwright)
-- [ ] Performance audit
-- [ ] Export CSV candidatures
+### Phase 9: Deploiement + Polish -- COMPLETE
+- [x] Vercel deployment (production)
+- [x] Variables d'environnement production
+- [x] Tests E2E (Playwright: auth, jobs, applications, settings)
+- [x] Export CSV + JSON avec filtres (jours, minScore, profil)
+
+### Phase 10: Cowork API + Agent Automation -- COMPLETE
+- [x] Endpoints Cowork (`/api/cowork/*`) pour automation Claude
+- [x] Agent columns (agent_status, ats_type, agent_notes) sur applications
+- [x] getReadyApplicationsForAgent + updateAgentStatus
+- [x] CRON_SECRET auth sur export GET
+
+### Phase 11: Fresh Jobs Pipeline + Robustness -- COMPLETE
+- [x] Suppression inbox_limit blocking (cron fetch toujours)
+- [x] Auto-expire lifecycle (3j processed, 7j unseen, 30j absolute)
+- [x] Dashboard en mode inbox (jobs frais uniquement)
+- [x] unseenJobCount dans cowork dashboard-summary
+- [x] Auto-mark scored jobs as seen (cron + cowork)
+- [x] RPC Postgres anti-joins (remplace NOT IN string concat)
+- [x] 4 indexes de performance (compound indexes)
+- [x] Auth cron unifiee (verifyCronSecret partout)
+- [x] Codes d'erreur specifiques pour agent debugging
+- [x] Cron timing optimise (expire 2AM -> fetch 4AM -> notif 4:30AM UTC)
 
 ---
 
 ## Schema Base de Donnees
 
-8 tables PostgreSQL via Supabase :
+10 migrations PostgreSQL via Supabase :
 
 | Table | Description |
 |-------|-------------|
-| `profiles` | User profile + preferences (auto-created via trigger) |
-| `resumes` | CV(s) avec texte brut et donnees parsees |
-| `job_listings` | Offres agregees de toutes sources |
-| `seen_jobs` | Tracking des offres vues/dismisses (TTL 30j) |
-| `match_scores` | Scores AI par offre/CV |
-| `applications` | Pipeline de candidatures (Kanban, 8 statuts) |
-| `cover_letters` | Lettres generees avec versioning |
-| `activity_log` | Timeline d'activite auto-generee |
-| `api_usage` | Tracking consommation API (OpenAI, JSearch, Adzuna) |
+| `profiles` | User profile + search preferences (rotation profiles, keywords, locations) |
+| `resumes` | CV(s) avec texte brut et donnees parsees (is_primary flag) |
+| `job_listings` | Offres agregees (dedup_hash unique, profile_label, is_active lifecycle) |
+| `seen_jobs` | Tracking des offres vues/dismisses (auto-expire 3j) |
+| `match_scores` | Scores AI par offre/CV (overall, skill, experience, education) |
+| `applications` | Pipeline Kanban (8 statuts + agent_status, ats_type, agent_notes) |
+| `cover_letters` | Lettres generees avec versioning + integrity warnings |
+| `career_chat_sessions` | Sessions de chat IA carriere |
+| `career_chat_messages` | Messages de chat IA carriere |
+
+### RPC Functions (migration 009)
+- `expire_processed_jobs(days)` -- Expire jobs vus/dismissed, protege les candidatures actives
+- `expire_unseen_jobs(days)` -- Expire jobs jamais vus
+- `expire_absolute_jobs(days)` -- Expiration absolue
+- `count_unseen_jobs(user_id)` -- Compteur jobs frais
+- `cleanup_unscored_jobs()` -- Desactive jobs jamais scores
 
 ---
 
 ## API Routes
 
+### User-facing
 | Route | Methode | Description |
 |-------|---------|-------------|
 | `/api/jobs/search` | POST | Recherche agregee JSearch + Adzuna |
 | `/api/jobs/dismiss` | POST | Dismiss/restore une offre |
+| `/api/jobs/seen` | POST | Marquer une offre comme vue |
+| `/api/jobs/export` | GET | Export CSV/JSON avec filtres |
+| `/api/jobs/manual-search` | POST | Recherche manuelle (3/24h) |
 | `/api/applications` | POST | Creer une candidature |
 | `/api/applications/[id]` | PATCH/DELETE | Modifier/supprimer une candidature |
-| `/api/profile` | GET/PUT | Lire/modifier le profil utilisateur |
+| `/api/profile` | PATCH | Modifier le profil utilisateur |
 | `/api/resumes/upload` | POST | Upload CV (Supabase Storage) |
 | `/api/resumes/[id]` | DELETE | Supprimer un CV |
 | `/api/ai/analyze-cv` | POST | Parser un CV via OpenAI |
 | `/api/ai/match-score` | POST | Scorer correspondance CV/offre |
-| `/api/ai/cover-letter` | POST | Generer lettre de motivation |
-| `/api/auth/logout` | POST | Deconnexion |
-| `/auth/callback` | GET | Callback confirmation email |
-| `/api/dev/seed` | POST | Seed donnees de dev |
+| `/api/ai/score-jobs` | POST | Scorer plusieurs offres en batch |
+| `/api/ai/cover-letter` | POST/PATCH | Generer/modifier lettre de motivation |
+| `/api/ai/match-score-detail` | GET | Detail score pour modale |
+| `/api/health` | GET | Keepalive Supabase |
+
+### Cron (auth: Bearer CRON_SECRET)
+| Route | Schedule | Description |
+|-------|----------|-------------|
+| `/api/cron/expire-jobs` | 2AM UTC | Expire jobs (3j/7j/30j lifecycle via RPC) |
+| `/api/cron/fetch-jobs` | 4AM UTC | Fetch + score + auto-mark seen |
+| `/api/cron/notifications` | 4:30AM UTC | Resume hebdo + rappels candidatures stale |
+
+### Cowork API (auth: Bearer CRON_SECRET)
+| Route | Methode | Description |
+|-------|---------|-------------|
+| `/api/cowork/dashboard-summary` | GET | Stats + unseenJobCount + preferences |
+| `/api/cowork/fetch-and-score` | POST | Fetch + upsert + score top 5 + auto-mark seen |
+| `/api/cowork/browser-apply` | POST | Creer candidature (retourne 201) |
+| `/api/cowork/notify` | POST | Envoyer emails (new_matches / stale_reminder) |
+| `/api/cowork/stale-applications` | GET | Candidatures sans update depuis N jours |
 
 ---
 
@@ -289,23 +331,28 @@ npm run test:run   # Tests (single run)
 
 ---
 
-## Limitations Connues (post-MVP)
+## Limitations Connues
 
 | Limitation | Solution future |
 |------------|----------------|
 | Dedup hash-based naif | Fuzzy matching ou dedup semantique via OpenAI |
 | JSearch free tier (500 req/mois) | Plan payant si besoin, cache agressif |
 | Adzuna free tier (2500/mois) | Cache 24h, privilegier JSearch |
-| Pas de drag-and-drop Kanban | dnd-kit Phase 7 |
 | Anti-hallucination keyword-based | Verification semantique via OpenAI |
 | Pas de RLS (Row Level Security) | Migration RLS prevue si multi-user |
+| Upload PDF 500 sur Vercel | unpdf installe, workaround .txt |
+| Vercel hobby timeout 60s | Scoring peut timeout si trop de jobs |
 
 ---
 
 ## Documentation
 
-- [Plan d'implementation detaille](docs/plans/2026-01-31-jobpilot-mvp.md) - Architecture, phases, code complet
-- [Plan Phase 6](docs/plans/2026-02-01-phase6-auth-ai-routes.md) - Auth Supabase + AI routes
+- [Plan MVP](docs/plans/2026-01-31-jobpilot-mvp.md) - Architecture initiale, phases 1-6
+- [Plan Fresh Jobs Pipeline](docs/plans/2026-03-28-fresh-jobs-pipeline.md) - Fix pipeline jobs stale
+- [Plan Robustness Fixes](docs/plans/2026-03-28-robustness-fixes.md) - RPC, indexes, error codes
+- [Backlog](docs/BACKLOG.md) - Bugs et features a faire
+- [Compact Master](docs/compact_master.md) - Reference permanente du projet
+- [Compact Current](docs/compact_current.md) - Etat actuel (mis a jour chaque session)
 - [Regles de code style](.claude/CODE_STYLE_RULES.md) - Zero emojis dans le code
 
 ---

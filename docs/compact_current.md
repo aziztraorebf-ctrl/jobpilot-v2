@@ -1,40 +1,79 @@
 # JobPilot - Compact Current
 
 > Etat actuel du projet. Mis a jour a chaque session.
-> Derniere mise a jour : 2026-03-28
+> Derniere mise a jour : 2026-03-29
 
 ---
 
 ## Dernier Commit
 
-`e5d7993` fix(export): resolve merge conflicts — use profile.id, keep ApplicationForAgent type
+`d1ef5a1` merge: fresh-jobs-pipeline + robustness tier1-tier2
 
 ---
 
 ## Etat du Projet
 
-**Branch** : main (clean, aucun changement non commite)
-**Deploy** : Vercel (production)
-**DB** : Supabase PostgreSQL (8 migrations appliquees)
+**Branch** : main (clean)
+**Deploy** : Vercel production — READY, verifie E2E le 2026-03-29
+**DB** : Supabase PostgreSQL (10 migrations appliquees, dont 009 RPC functions + 010 indexes)
 
 ---
 
-## Travail Recent (depuis dernier plan documente, 2026-02-06)
+## CONTEXTE — Ce qui s'est passe cette session (2026-03-29)
 
-### Features livrees
-- Export CSV/JSON avec filtres (jours, minScore, profil) + UI
-- Load-more (25 jobs initiaux, +10 par clic)
-- Dashboard unseen count (jobs actifs non vus)
-- Cowork API endpoints pour automation Claude
-- Agent columns (agent_status, ats_type, agent_notes) sur applications
-- Query getReadyApplicationsForAgent + updateAgentStatus
+### Probleme diagnostique : memes offres jour apres jour
 
-### Bugs fixes
-- Export auth (CRON_SECRET sur GET)
-- CSV escaping multiline + profile_label
-- Dashboard unseen count (subquery cassee -> 2-step)
-- Hardcoded USER_ID -> dynamic profile lookup dans cowork routes
-- Merge conflicts resolus (profile.id vs profile.user_id)
+L'utilisateur voyait les memes jobs chaque jour malgre le cron quotidien. Investigation approfondie a revele un probleme multi-couche :
+
+1. **Cause racine** : `inbox_limit` (200) bloquait le cron fetch ENTIEREMENT quand 200+ jobs non-vus
+2. **Causes secondaires** : Dashboard sans filtre seen, expiry trop lente (30j pour jobs vus), pas de auto-mark seen apres scoring, cowork API ne distinguait pas jobs frais vs total
+
+### Decision architecturale : passage 100% automatise
+
+L'app etait concue pour un usage mixte (manuel + automatise). Maintenant elle est 100% automatisee. L'architecture a ete adaptee : le cron fetch toujours, les jobs traites expirent en 3j, l'inbox ne montre que du neuf.
+
+### Deux plans executes et merges
+
+**Plan 1 : Fresh Jobs Pipeline** (7 commits)
+- Suppression inbox_limit blocking
+- Auto-expire : 3j processed, 7j unseen, 30j absolute (jobs avec candidature active proteges)
+- Dashboard en mode inbox (jobs frais uniquement)
+- `unseenJobCount` dans cowork dashboard-summary
+- Auto-mark seen apres scoring (cron + cowork)
+
+**Plan 2 : Robustness Tier 1+2** (7 commits)
+- Queries NOT IN string concat -> RPC Postgres anti-joins (migration 009)
+- 4 indexes de performance (migration 010)
+- Auth cron unifiee sur `verifyCronSecret()`
+- Codes d'erreur specifiques (`INTERNAL_ERROR`, `VALIDATION_ERROR`, `RESUME_NOT_FOUND`, etc.)
+- browser-apply retourne 201 au lieu de 501
+- Auto-scorer logging ameliore
+- Cron timing reordonne : expire 2AM -> fetch 4AM -> notifications 4:30AM UTC
+
+### Audit complet realise
+
+Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et Tier 2 sont corriges. Reste le Tier 3 (opportunites d'automatisation) :
+
+- `/api/cowork/next-actions` — endpoint qui dit a l'agent quoi faire
+- Score refresh apres changement CV
+- Stale application escalation auto
+- Source health monitoring
+- Keyword effectiveness tracking
+- Auto-cleanup cron (orphelins)
+
+### Tests E2E en production — 9/9 OK
+
+| Test | Resultat |
+|------|----------|
+| Health | OK |
+| Dashboard summary + unseenJobCount | OK (49 unseen, 19 recents 24h) |
+| Expire jobs (RPC) | OK (25 expires) |
+| Fetch jobs (plus de blocage) | OK (200, nouveaux jobs fetches) |
+| Stale applications | OK |
+| Auth refusee sans secret | OK (401) |
+| Auth refusee mauvais secret | OK (401) |
+| Browser-apply error codes | OK (INTERNAL_ERROR + context) |
+| Dashboard apres expire | OK (65 -> 54 actifs) |
 
 ---
 
@@ -50,28 +89,32 @@
 ## Backlog Features (par priorite)
 
 ### Haute
-- **[UX-4] Modale detail score IA** : ScoreCircle cliquable -> modale avec sous-scores, skills match/missing, strengths/concerns. Spec complete dans BACKLOG.md. Prete a implementer.
+- **[UX-4] Modale detail score IA** : Spec complete dans BACKLOG.md. Prete a implementer.
+- **Cowork next-actions endpoint** : L'agent doit savoir quoi faire sans deviner.
 
 ### Moyenne
-- **[UX-3] Lettres de motivation par offre** : API existe (`/api/ai/cover-letter`) mais pas d'UI. Flux: bouton sur offre -> modale editeur -> sauvegarde dans application.
+- **[UX-3] Lettres de motivation par offre** : API existe, pas d'UI.
+- **Score refresh apres changement CV** : Scores figes sur ancien CV.
+- **Stale application escalation** : Auto-needs_review apres 14j, auto-rejected apres 30j.
 
 ### Basse
-- **[UX-2] Page dediee CV** : Transformer l'onglet CV en page complete `/settings/cv` avec profil IA, edition inline, score completude.
-- **[UX-1] Assistant IA carriere** : Chat conversationnel qui lit le CV et suggere des directions. Tables DB existent deja (career_chat_sessions/messages).
+- **[UX-2] Page dediee CV** / **[UX-1] Assistant IA carriere**
+- **Source health monitoring** / **Keyword effectiveness tracking**
+- **Auto-cleanup cron** (orphelins cover_letters, seen_jobs stale)
 
 ---
 
 ## Points d'Attention
 
-- **Vercel cron limit** : 10s max sur free tier. Fetch seulement dans le cron, scoring lazy.
+- **Vercel hobby timeout** : 60s max. Le fetch-jobs peut timeout si scoring trop lourd — fonctionne mais au limite.
 - **Adzuna rate limit** : 2500 appels/mois. Cache 24h en DB.
-- **Agent automation** : Les colonnes agent_status/ats_type/agent_notes sont en place mais l'agent candidature n'est pas encore construit.
-- **Pas de plan documente apres Phase 8** : Les features post-phase 8 ont ete implementees en sessions ad hoc sans plan formel dans docs/plans/.
+- **Triggers schedules** : Aucun trigger Claude Code schedule n'existe (liste vide). A creer si besoin.
+- **Fichiers CLAUDE.md parasites** : Les agents d'exploration laissent des CLAUDE.md dans les sous-dossiers. Nettoyer regulierement.
 
 ---
 
-## Prochaine Session Suggeree
+## Prochaine Action
 
-1. Fixer BUG-2 (PDF upload) si pas deja fait avec unpdf
-2. Implementer UX-4 (modale detail score) — spec complete, ready to go
-3. Ou continuer le travail agent automation selon les priorites utilisateur
+**Quoi** : Implementer UX-4 (modale detail score IA) ou le cowork next-actions endpoint
+**Pourquoi** : UX-4 est la feature la plus specifiee et prete a go. next-actions est le plus gros multiplicateur pour l'agent automatise.
+**Comment** : Spec complete dans docs/BACKLOG.md pour UX-4. Pour next-actions, creer un plan.

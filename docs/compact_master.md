@@ -40,8 +40,8 @@ Application personnelle d'assistance a la recherche d'emploi. Agregation d'offre
 - **applications** : pipeline Kanban (saved -> applied -> interview -> offer -> rejected), agent_status, ats_type, agent_notes
 - **career_chat_sessions / career_chat_messages** : chat IA carriere (tables existent, feature partielle)
 
-### Migrations appliquees (8)
-001_initial_schema -> 002_jsearch_source -> 003_auth_profile_trigger -> 004_dedup_hash_unique -> 005_career_chat_tables -> 006_integrity_warnings -> 007_profile_label -> 008_agent_columns
+### Migrations appliquees (10)
+001_initial_schema -> 002_jsearch_source -> 003_auth_profile_trigger -> 004_dedup_hash_unique -> 005_career_chat_tables -> 006_integrity_warnings -> 007_profile_label -> 008_agent_columns -> 009_add_rpc_functions -> 010_add_performance_indexes
 
 ---
 
@@ -51,11 +51,16 @@ Application personnelle d'assistance a la recherche d'emploi. Agregation d'offre
 |----------|-------|--------|
 | Auth | Password env var + middleware | Mono-utilisateur, pas besoin de Supabase Auth |
 | CV input | Upload fichier (PDF/TXT) + parsing IA | PDF via unpdf (pdf-parse abandonne car 500 sur Vercel Serverless) |
-| Scoring | Lazy scoring (scoring a la consultation, pas dans le cron) | Cron Vercel free = 10s max |
+| Scoring | Auto-scoring dans le cron + auto-mark seen | Jobs scores sortent de l'inbox, expirent apres 3j |
 | Dedup | Hash-based (dedup_hash unique) | Simple et suffisant pour le volume |
 | Export | CSV + JSON avec filtres (jours, minScore, profil) | Utilisable par agents externes |
 | Cowork API | Endpoints dedies /api/cowork/* | Pour automation Claude Cowork |
 | Agent columns | agent_status, ats_type, agent_notes sur applications | Pour tracking des candidatures par agent IA |
+| Mode operatoire | 100% automatise (plus de mode manuel) | Architecture priorise flux continu de nouvelles offres |
+| Expiry lifecycle | 3j processed, 7j unseen, 30j absolute (RPC) | Jobs avec candidature active jamais expires |
+| Query scaling | RPC Postgres anti-joins (NOT EXISTS) | Remplace NOT IN string concat qui crash a 10k+ IDs |
+| Error codes API | KNOWN_ERROR_CODES map dans apiError | L'agent distingue les types d'erreur et retry intelligemment |
+| Cron timing | expire 2AM -> fetch 4AM -> notifications 4:30AM UTC | Nettoyer avant remplir, buffer apres fetch |
 
 ---
 
