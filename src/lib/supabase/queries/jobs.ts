@@ -286,112 +286,41 @@ export async function getSeenJobIds(userId: string): Promise<{ id: string; seen_
   return (data ?? []).map((row) => ({ id: row.job_listing_id, seen_at: row.seen_at ?? "1970-01-01T00:00:00.000Z" }));
 }
 
+const PROCESSED_EXPIRY_DAYS = 3;
 const UNSEEN_EXPIRY_DAYS = 7;
 const ABSOLUTE_EXPIRY_DAYS = 30;
 
 /**
- * Expire job listings that are too old:
- * - Unseen (no seen_jobs entry) + older than UNSEEN_EXPIRY_DAYS
- * - All jobs older than ABSOLUTE_EXPIRY_DAYS
- * Returns count of expired jobs.
+ * Expire job listings based on lifecycle using server-side RPC functions.
+ * 1. Processed jobs (seen/dismissed) older than 3 days -> inactive
+ * 2. Unseen jobs older than 7 days -> inactive
+ * 3. All jobs older than 30 days -> inactive (absolute)
+ * Jobs with active applications are NEVER expired.
  */
 export async function expireOldJobs(): Promise<{ expired: number }> {
   const supabase = getSupabase();
-  const now = new Date();
 
-  const unseenCutoff = new Date(now.getTime() - UNSEEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const absoluteCutoff = new Date(now.getTime() - ABSOLUTE_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { data: processed, error: e1 } = await supabase.rpc("expire_processed_jobs", { p_days: PROCESSED_EXPIRY_DAYS });
+  if (e1) console.error("[expireOldJobs] processed:", e1.message);
 
-  // 1. Expire jobs older than 30 days (absolute)
-  const { error: absoluteError, count: absoluteCount } = await supabase
-    .from("job_listings")
-    .update({ is_active: false }, { count: "exact" })
-    .eq("is_active", true)
-    .lt("fetched_at", absoluteCutoff);
+  const { data: unseen, error: e2 } = await supabase.rpc("expire_unseen_jobs", { p_days: UNSEEN_EXPIRY_DAYS });
+  if (e2) console.error("[expireOldJobs] unseen:", e2.message);
 
-  if (absoluteError) {
-    throw new Error(`Failed to expire old jobs (absolute): ${absoluteError.message}`);
-  }
+  const { data: absolute, error: e3 } = await supabase.rpc("expire_absolute_jobs", { p_days: ABSOLUTE_EXPIRY_DAYS });
+  if (e3) console.error("[expireOldJobs] absolute:", e3.message);
 
-  // 2. Get IDs of jobs that have been seen (have an entry in seen_jobs)
-  const { data: seenJobIds, error: seenError } = await supabase
-    .from("seen_jobs")
-    .select("job_listing_id");
-
-  if (seenError) {
-    throw new Error(`Failed to fetch seen job IDs: ${seenError.message}`);
-  }
-
-  const seenIds = (seenJobIds ?? []).map((r) => r.job_listing_id);
-
-  let unseenExpiredCount = 0;
-  if (seenIds.length > 0) {
-    // Expire active jobs not in seen list, older than 7 days
-    const { error: unseenError, count } = await supabase
-      .from("job_listings")
-      .update({ is_active: false }, { count: "exact" })
-      .eq("is_active", true)
-      .lt("fetched_at", unseenCutoff)
-      .not("id", "in", `(${seenIds.join(",")})`);
-
-    if (unseenError) {
-      throw new Error(`Failed to expire unseen jobs: ${unseenError.message}`);
-    }
-    unseenExpiredCount = count ?? 0;
-  } else {
-    // No seen jobs at all — expire all unseen older than 7 days
-    const { error: unseenError, count } = await supabase
-      .from("job_listings")
-      .update({ is_active: false }, { count: "exact" })
-      .eq("is_active", true)
-      .lt("fetched_at", unseenCutoff);
-
-    if (unseenError) {
-      throw new Error(`Failed to expire unseen jobs: ${unseenError.message}`);
-    }
-    unseenExpiredCount = count ?? 0;
-  }
-
-  return { expired: (absoluteCount ?? 0) + unseenExpiredCount };
+  const total = (processed ?? 0) + (unseen ?? 0) + (absolute ?? 0);
+  console.log(`[expireOldJobs] Expired: ${processed ?? 0} processed, ${unseen ?? 0} unseen, ${absolute ?? 0} absolute`);
+  return { expired: total };
 }
 
 /**
- * One-shot cleanup: deactivate all jobs with no score entry (never scored).
- * Used to clean up the initial backlog of unscored jobs.
- * Returns count of deactivated jobs.
+ * Deactivate all active jobs with no score entry (never scored).
+ * Uses server-side RPC to avoid PostgREST payload limits.
  */
 export async function cleanupUnscoredJobs(): Promise<{ deactivated: number }> {
   const supabase = getSupabase();
-
-  // Get IDs of jobs that have at least one score
-  const { data: scoredJobIds, error: scoredError } = await supabase
-    .from("match_scores")
-    .select("job_listing_id");
-
-  if (scoredError) {
-    throw new Error(`Failed to fetch scored job IDs: ${scoredError.message}`);
-  }
-
-  const scoredIds = (scoredJobIds ?? []).map((r) => r.job_listing_id);
-
-  if (scoredIds.length === 0) {
-    // No scores at all — deactivate everything
-    const { error, count } = await supabase
-      .from("job_listings")
-      .update({ is_active: false }, { count: "exact" })
-      .eq("is_active", true);
-
-    if (error) throw new Error(`Failed to cleanup unscored jobs: ${error.message}`);
-    return { deactivated: count ?? 0 };
-  }
-
-  // Deactivate active jobs NOT in scoredIds
-  const { error, count } = await supabase
-    .from("job_listings")
-    .update({ is_active: false }, { count: "exact" })
-    .eq("is_active", true)
-    .not("id", "in", `(${scoredIds.join(",")})`);
-
+  const { data, error } = await supabase.rpc("cleanup_unscored_jobs");
   if (error) throw new Error(`Failed to cleanup unscored jobs: ${error.message}`);
-  return { deactivated: count ?? 0 };
+  return { deactivated: data ?? 0 };
 }

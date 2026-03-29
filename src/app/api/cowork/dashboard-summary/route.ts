@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { apiError } from "@/lib/api/error-response";
 import { getProfile, getStaleApplications, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
-import { getDashboardCounts, getRecentJobCount } from "@/lib/supabase/queries/cowork";
+import { getDashboardCounts, getRecentJobCount, getUnseenJobCount } from "@/lib/supabase/queries/cowork";
 import { parseSearchPreferences } from "@/types/search-preferences";
 
 export async function GET(request: Request) {
@@ -17,11 +17,12 @@ export async function GET(request: Request) {
     }
     const userId = profiles[0].id;
 
-    const [profile, counts, recentJobs, stale] = await Promise.all([
+    const [profile, counts, recentJobs, stale, unseenJobs] = await Promise.all([
       getProfile(userId),
       getDashboardCounts(userId),
       getRecentJobCount(24),
       getStaleApplications(userId, 7),
+      getUnseenJobCount(userId),
     ]);
 
     const prefs = parseSearchPreferences(profile.search_preferences);
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
         ...counts,
         recentJobsFetched24h: recentJobs,
         staleApplicationCount: stale.length,
+        unseenJobCount: unseenJobs,
       },
     });
   } catch (error) {

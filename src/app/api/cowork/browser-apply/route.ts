@@ -31,18 +31,18 @@ export async function POST(request: Request) {
     // Create the application in "saved" status so it's tracked
     const application = await createApplication(userId, body.job_listing_id);
 
-    // Browser automation is not yet implemented.
-    // This endpoint is ready for future Playwright / Web MCP integration.
+    // Return 201: application created and tracked.
+    // Browser automation (actual form submission) is not yet implemented.
+    // The agent should proceed with manual application tracking.
     return NextResponse.json(
       {
-        status: "not_implemented",
-        message:
-          "Browser MCP integration pending. Application created with status 'saved' for tracking.",
+        status: "saved",
+        message: "Application created with status 'saved'. Browser automation pending.",
         applicationId: application.id,
         jobListingId: body.job_listing_id,
         applicationUrl: body.application_url,
       },
-      { status: 501 }
+      { status: 201 }
     );
   } catch (error) {
     if (error instanceof ZodError) {

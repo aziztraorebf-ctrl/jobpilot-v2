@@ -1,9 +1,10 @@
 // src/app/api/cron/fetch-jobs/route.ts
 import { NextResponse } from "next/server";
+import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { getSupabase } from "@/lib/supabase/client";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { deduplicateJobs } from "@/lib/services/deduplicator";
-import { upsertJobs, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
+import { upsertJobs, getProfilesWithAutoSearch, markJobSeen } from "@/lib/supabase/queries";
 import { updateProfile } from "@/lib/supabase/queries/profiles";
 import { sendEmail } from "@/lib/services/email-service";
 import { render } from "@react-email/components";
@@ -15,10 +16,8 @@ import { MIN_DISPLAY_SCORE } from "@/lib/config/scoring";
 import type { UnifiedJob } from "@/lib/schemas/job";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronSecret(request)) {
+    return unauthorizedResponse();
   }
 
   try {
@@ -52,8 +51,7 @@ export async function GET(request: Request) {
           currentPrefs = rotatedPrefs;
         }
 
-        // Skip fetch if unseen active jobs already exceed the inbox limit
-        const inboxLimit = (prefs.inbox_limit as number | undefined) ?? 200;
+        // Log unseen count for monitoring (no longer blocks fetching)
         const { count: unseenCount } = await supabase
           .from("job_listings")
           .select("id", { count: "exact", head: true })
@@ -61,10 +59,7 @@ export async function GET(request: Request) {
           .not("id", "in",
             supabase.from("seen_jobs").select("job_listing_id").eq("user_id", profile.id)
           );
-        if ((unseenCount ?? 0) >= inboxLimit) {
-          console.log(`[Cron fetch-jobs] Profile ${profile.id} inbox full (${unseenCount}/${inboxLimit}), skipping fetch`);
-          continue;
-        }
+        console.log(`[Cron fetch-jobs] Profile ${profile.id} unseen jobs: ${unseenCount}`);
 
         const activeProfile = getActiveSearchProfile(currentPrefs);
         const keywords = activeProfile.keywords;
@@ -127,6 +122,16 @@ export async function GET(request: Request) {
             if (deactivateError) {
               console.error("[Cron fetch-jobs] Failed to deactivate low-score jobs:", deactivateError.message);
             }
+          }
+        }
+
+        // Auto-mark all scored jobs as "seen" so they cycle out of the inbox
+        const scoredJobIds = Object.keys(scores);
+        for (const jobId of scoredJobIds) {
+          try {
+            await markJobSeen(profile.id, jobId);
+          } catch {
+            // Non-blocking: seen tracking is best-effort
           }
         }
 

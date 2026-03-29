@@ -4,7 +4,7 @@ import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { apiError } from "@/lib/api/error-response";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
-import { upsertJobs, getProfile, getProfilesWithAutoSearch } from "@/lib/supabase/queries";
+import { upsertJobs, getProfile, getProfilesWithAutoSearch, markJobSeen } from "@/lib/supabase/queries";
 import { parseSearchPreferences } from "@/types/search-preferences";
 
 const MAX_JOBS_TO_SCORE = 5;
@@ -81,6 +81,15 @@ export async function POST(request: Request) {
     }));
 
     const scores = await scoreJobsForProfile(userId, jobsForScoring);
+
+    // Auto-mark scored jobs as seen for inbox cycling
+    for (const job of toScore) {
+      try {
+        await markJobSeen(userId, job.dedup_hash);
+      } catch {
+        // Best-effort
+      }
+    }
 
     const topMatches = toScore
       .filter((j) => scores[j.dedup_hash] !== undefined)
