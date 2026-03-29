@@ -50,8 +50,10 @@ export async function scoreJobsForProfile(
         concerns: score.concerns,
       });
       scoreMap[job.id] = score.overall_score;
-    } catch {
-      console.error(`[auto-scorer] Failed to score job ${job.id} for user ${userId}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[auto-scorer] Failed to score job ${job.id} for user ${userId}: ${msg}`);
+      // Job stays in DB without score -- will be cleaned up by cleanup_unscored_jobs RPC
     }
   }
 
