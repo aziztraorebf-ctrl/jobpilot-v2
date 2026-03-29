@@ -2,16 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
+      "path": "/api/cron/expire-jobs",
+      "schedule": "0 2 * * *"
+    },
+    {
       "path": "/api/cron/fetch-jobs",
-      "schedule": "0 8 * * *"
+      "schedule": "0 4 * * *"
     },
     {
       "path": "/api/cron/notifications",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/expire-jobs",
-      "schedule": "0 3 * * *"
+      "schedule": "30 4 * * *"
     }
   ]
 }
