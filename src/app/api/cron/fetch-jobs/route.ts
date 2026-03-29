@@ -1,5 +1,6 @@
 // src/app/api/cron/fetch-jobs/route.ts
 import { NextResponse } from "next/server";
+import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { getSupabase } from "@/lib/supabase/client";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import { deduplicateJobs } from "@/lib/services/deduplicator";
@@ -15,10 +16,8 @@ import { MIN_DISPLAY_SCORE } from "@/lib/config/scoring";
 import type { UnifiedJob } from "@/lib/schemas/job";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronSecret(request)) {
+    return unauthorizedResponse();
   }
 
   try {
