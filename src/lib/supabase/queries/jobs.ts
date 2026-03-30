@@ -157,6 +157,29 @@ export async function getJobById(jobId: string): Promise<JobRow> {
 }
 
 /**
+ * Fetch multiple active jobs by IDs. Returns only jobs where is_active=true.
+ * Useful for re-scoring: filters out expired jobs to avoid wasting AI tokens.
+ */
+export async function getActiveJobsByIds(
+  jobIds: string[]
+): Promise<JobRow[]> {
+  if (jobIds.length === 0) return [];
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("job_listings")
+    .select("*")
+    .in("id", jobIds)
+    .eq("is_active", true);
+
+  if (error) {
+    throw new Error(`Failed to fetch active jobs by IDs: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+/**
  * Dismiss a job for the current user by upserting into seen_jobs
  * with dismissed=true.
  *
