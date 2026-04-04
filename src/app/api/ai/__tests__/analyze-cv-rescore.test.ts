@@ -5,14 +5,20 @@ vi.mock("@/lib/supabase/get-user", () => ({
   requireUser: vi.fn(() => ({ id: "user-1" })),
 }));
 
+const mockCreateSignedUrl = vi.fn();
 vi.mock("@/lib/supabase/client", () => ({
   getSupabase: vi.fn(() => ({
     storage: {
       from: vi.fn(() => ({
         download: vi.fn(),
+        createSignedUrl: mockCreateSignedUrl,
       })),
     },
   })),
+}));
+
+vi.mock("@/lib/api/firecrawl", () => ({
+  extractPdfTextFromUrl: vi.fn(() => "Extracted PDF text: Software engineer with React experience..."),
 }));
 
 vi.mock("@/lib/supabase/queries", () => ({
@@ -39,9 +45,10 @@ vi.mock("@/lib/api/ai-route-helpers", () => ({
 }));
 
 import { POST } from "../analyze-cv/route";
-import { getResumeById, getActiveJobsByIds } from "@/lib/supabase/queries";
+import { getResumeById, updateResume, getActiveJobsByIds } from "@/lib/supabase/queries";
 import { getJobIdsByResumeId } from "@/lib/supabase/queries/scores";
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
+import { extractPdfTextFromUrl } from "@/lib/api/firecrawl";
 
 const RESUME_UUID = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";
 
@@ -142,5 +149,114 @@ describe("analyze-cv score refresh", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(vi.mocked(scoreJobsForProfile).mock.calls[0][1]).toHaveLength(10);
+  });
+});
+
+describe("analyze-cv PDF parsing via Firecrawl", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("extracts PDF text via Firecrawl when raw_text is empty", async () => {
+    vi.mocked(getResumeById).mockResolvedValue({
+      id: RESUME_UUID,
+      user_id: "user-1",
+      raw_text: null,
+      parsed_data: null,
+      file_path: "user-1/cv.pdf",
+      file_type: "pdf",
+      file_name: "cv.pdf",
+      is_primary: true,
+      ai_tokens_used: 0,
+      created_at: "2026-01-01",
+      updated_at: "2026-01-01",
+    } as never);
+
+    mockCreateSignedUrl.mockResolvedValue({
+      data: { signedUrl: "https://supabase.storage/signed/user-1/cv.pdf?token=abc" },
+      error: null,
+    });
+
+    const req = new Request("http://localhost/api/ai/analyze-cv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeId: RESUME_UUID }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    expect(extractPdfTextFromUrl).toHaveBeenCalledWith(
+      "https://supabase.storage/signed/user-1/cv.pdf?token=abc"
+    );
+    expect(updateResume).toHaveBeenCalledWith(
+      "user-1",
+      RESUME_UUID,
+      expect.objectContaining({ raw_text: expect.stringContaining("Extracted PDF text") })
+    );
+  });
+
+  it("returns 500 when signed URL generation fails", async () => {
+    vi.mocked(getResumeById).mockResolvedValue({
+      id: RESUME_UUID,
+      user_id: "user-1",
+      raw_text: null,
+      parsed_data: null,
+      file_path: "user-1/cv.pdf",
+      file_type: "pdf",
+      file_name: "cv.pdf",
+      is_primary: true,
+      ai_tokens_used: 0,
+      created_at: "2026-01-01",
+      updated_at: "2026-01-01",
+    } as never);
+
+    mockCreateSignedUrl.mockResolvedValue({
+      data: null,
+      error: { message: "Not found" },
+    });
+
+    const req = new Request("http://localhost/api/ai/analyze-cv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeId: RESUME_UUID }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toContain("signed URL");
+  });
+
+  it("returns 422 when Firecrawl extracts empty text from PDF", async () => {
+    vi.mocked(getResumeById).mockResolvedValue({
+      id: RESUME_UUID,
+      user_id: "user-1",
+      raw_text: null,
+      parsed_data: null,
+      file_path: "user-1/cv.pdf",
+      file_type: "pdf",
+      file_name: "cv.pdf",
+      is_primary: true,
+      ai_tokens_used: 0,
+      created_at: "2026-01-01",
+      updated_at: "2026-01-01",
+    } as never);
+
+    mockCreateSignedUrl.mockResolvedValue({
+      data: { signedUrl: "https://supabase.storage/signed/user-1/cv.pdf?token=abc" },
+      error: null,
+    });
+
+    vi.mocked(extractPdfTextFromUrl).mockResolvedValue("");
+
+    const req = new Request("http://localhost/api/ai/analyze-cv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeId: RESUME_UUID }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
   });
 });
