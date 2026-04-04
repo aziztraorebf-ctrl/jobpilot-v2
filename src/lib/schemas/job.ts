@@ -71,7 +71,37 @@ export type UnifiedJob = z.infer<typeof UnifiedJobSchema>;
 
 // --- Dedup hash ---
 function normalize(s: string | null | undefined): string {
-  return (s || "unknown").toLowerCase().trim().replace(/\s+/g, " ");
+  let result = (s || "unknown").toLowerCase().trim();
+  result = result.replace(/\s+/g, " ");
+  // Strip common corporate suffixes
+  result = result.replace(/\b(inc|ltd|corp|co|llc|gmbh|sa|sas|sarl)\.?\b/g, "");
+  // Normalize common tech terms
+  result = result.replace(/\breact\.?js\b/g, "react");
+  result = result.replace(/\bnode\.?js\b/g, "node");
+  result = result.replace(/\bnext\.?js\b/g, "next");
+  result = result.replace(/\bvue\.?js\b/g, "vue");
+  // Strip punctuation (keep alphanumeric + spaces)
+  result = result.replace(/[^a-z0-9\s]/g, "");
+  return result.replace(/\s+/g, " ").trim();
+}
+
+const PROVINCE_MAP: Record<string, string> = {
+  ontario: "on", quebec: "qc", "british columbia": "bc",
+  alberta: "ab", manitoba: "mb", saskatchewan: "sk",
+  "nova scotia": "ns", "new brunswick": "nb",
+  newfoundland: "nl", "prince edward island": "pe",
+};
+
+function normalizeLocation(s: string | null | undefined): string {
+  let result = (s || "unknown").toLowerCase().trim();
+  // Expand province abbreviations to full then normalize all to short form
+  for (const [full, abbr] of Object.entries(PROVINCE_MAP)) {
+    result = result.replace(new RegExp(`\\b${full}\\b`, "g"), abbr);
+  }
+  // Remove "canada" / trailing "ca"
+  result = result.replace(/\bcanada\b/g, "");
+  result = result.replace(/,?\s*\bca\b\s*$/, "");
+  return normalize(result);
 }
 
 export function computeDedupHash(
@@ -82,7 +112,7 @@ export function computeDedupHash(
   const input = [
     normalize(title),
     normalize(company),
-    normalize(location),
+    normalizeLocation(location),
   ].join("|");
   return createHash("sha256").update(input).digest("hex").substring(0, 16);
 }

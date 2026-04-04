@@ -69,4 +69,40 @@ describe("computeDedupHash", () => {
     const h2 = computeDedupHash("data analyst", "acme", "Montreal");
     expect(h1).toBe(h2);
   });
+
+  it("normalizes corporate suffixes (Inc., Ltd., Corp.)", () => {
+    const h1 = computeDedupHash("Dev", "TechCorp Inc.", "Montreal");
+    const h2 = computeDedupHash("Dev", "TechCorp", "Montreal");
+    expect(h1).toBe(h2);
+  });
+
+  it("normalizes tech framework names (React.js vs React)", () => {
+    const h1 = computeDedupHash("Senior React.js Developer", "Acme", "Toronto");
+    const h2 = computeDedupHash("Senior React Developer", "Acme", "Toronto");
+    expect(h1).toBe(h2);
+  });
+
+  it("normalizes Node.js vs Node", () => {
+    const h1 = computeDedupHash("Node.js Backend", "Co", "Montreal");
+    const h2 = computeDedupHash("Node Backend", "Co", "Montreal");
+    expect(h1).toBe(h2);
+  });
+
+  it("normalizes Canadian provinces (Ontario vs ON)", () => {
+    const h1 = computeDedupHash("Dev", "Acme", "Toronto, Ontario, Canada");
+    const h2 = computeDedupHash("Dev", "Acme", "Toronto, ON, CA");
+    expect(h1).toBe(h2);
+  });
+
+  it("normalizes Quebec province name", () => {
+    const h1 = computeDedupHash("Dev", "Acme", "Montreal, Quebec");
+    const h2 = computeDedupHash("Dev", "Acme", "Montreal, QC, Canada");
+    expect(h1).toBe(h2);
+  });
+
+  it("still distinguishes genuinely different jobs", () => {
+    const h1 = computeDedupHash("React Developer", "Shopify", "Montreal");
+    const h2 = computeDedupHash("Python Developer", "Shopify", "Montreal");
+    expect(h1).not.toBe(h2);
+  });
 });
