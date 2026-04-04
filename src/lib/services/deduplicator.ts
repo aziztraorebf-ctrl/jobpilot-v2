@@ -2,6 +2,7 @@ import type { UnifiedJob } from "@/lib/schemas/job";
 
 const SOURCE_PRIORITY: Record<string, number> = {
   adzuna: 2,
+  firecrawl: 2,
   jooble: 1,
   manual: 3,
 };
