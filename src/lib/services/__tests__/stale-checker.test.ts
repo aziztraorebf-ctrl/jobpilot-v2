@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Set env so checkWithFirecrawl path is taken in tests
+process.env.FIRECRAWL_API_KEY = "fc-test-key";
+
 vi.mock("@/lib/api/firecrawl", () => ({
   getFirecrawlClient: vi.fn(),
 }));
