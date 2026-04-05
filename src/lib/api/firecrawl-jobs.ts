@@ -2,7 +2,7 @@ import { getFirecrawlClient } from "./firecrawl";
 import { computeDedupHash, type UnifiedJob } from "@/lib/schemas/job";
 
 // JSON Schema (not Zod) — Firecrawl SDK expects Record<string, unknown> with Zod v4
-const FIRECRAWL_JOB_SCHEMA: Record<string, unknown> = {
+export const FIRECRAWL_JOB_SCHEMA: Record<string, unknown> = {
   type: "object",
   properties: {
     title: { type: "string" },

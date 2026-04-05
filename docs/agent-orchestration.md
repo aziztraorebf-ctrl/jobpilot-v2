@@ -13,6 +13,7 @@
 | 4:00 AM | fetch-jobs | Fetch from JSearch + Adzuna + Firecrawl, deduplicate, upsert, auto-score, mark seen, send email alerts. |
 | 4:30 AM | notifications | Email digest of new high-score matches. |
 | On-demand | agent | Call `/api/cowork/next-actions` to decide what to do next. |
+| On-demand | scout | Call `/api/cowork/scout` for proactive job discovery on career pages, Jobillico, etc. |
 
 ---
 
@@ -51,7 +52,9 @@ Fetches and scores jobs. Uses profile's search_preferences by default.
 - Auto-apply: Greenhouse, Lever, or "other" with simple form and no auth
 - Escalate to `needs_review`: LinkedIn, Indeed, Workday, or any page requiring auth
 
-**Phase 3 — Execution:** Uses `firecrawl interact` to fill form fields with profile data (name, email) and submit.
+**Phase 3 — Execution:** Uses `firecrawl interact` to fill form fields with profile data (name, AgentMail email) and submit.
+
+**AgentMail:** Applications use `jobpilot-aziz@agentmail.to` as the contact email. Confirmations arrive there, not in the personal inbox. The agent can check this inbox via AgentMail MCP tools.
 
 **Response:** `{ status, phase, applicationId, atsType?, reason?, error?, message? }`
 
@@ -62,6 +65,36 @@ Fetches and scores jobs. Uses profile's search_preferences by default.
 Returns applications unchanged for N days (default 7) in applied/interview status.
 
 **Query:** `?days=7`
+
+### POST /api/cowork/scout
+
+**3 modes for proactive job discovery beyond the standard pipeline.**
+
+**Mode "targets"** — Scrape specific career pages:
+```json
+{ "mode": "targets", "urls": ["https://carrieres.stm.info/offres", "https://www.jobillico.com/recherche-emploi/montreal/quebec/temps-plein"] }
+```
+
+**Mode "search"** — Web search with structured extraction:
+```json
+{ "mode": "search", "keywords": "emploi temps plein 21$ heure", "location": "Montreal", "limit": 10 }
+```
+
+**Mode "agent"** — Autonomous navigation for complex sites:
+```json
+{ "mode": "agent", "prompt": "Find all open positions at City of Montreal paying $20-25/hour", "maxCredits": 50 }
+```
+
+**Response:** `{ mode, discovered, inserted, scored, topMatches[], errors[], creditsUsed }`
+
+**When to use each mode:**
+- `targets`: daily cron on known career pages (STM, Ville de Montreal, Desjardins, universities)
+- `search`: when looking for new types of jobs or exploring new keywords
+- `agent`: for complex career sites with pagination, filters, or dynamic content (use sparingly — higher credit cost)
+
+**Credit budget:** Set `maxCredits` in agent mode to cap spending. Targets mode costs ~3-5 credits/URL, search ~5/result, agent ~10-50 per mission.
+
+---
 
 ### GET /api/cowork/dashboard-summary
 
