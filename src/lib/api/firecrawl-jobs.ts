@@ -77,6 +77,8 @@ export async function searchFirecrawl(
   return { jobs, total: jobs.length };
 }
 
+const VALID_REMOTE_TYPES = new Set(["onsite", "hybrid", "remote", "unknown"]);
+
 export function normalizeFirecrawlJob(
   raw: FirecrawlJobExtract,
   sourceUrl: string
@@ -103,8 +105,12 @@ export function normalizeFirecrawlJob(
     job_type: raw.job_type || null,
     category: null,
     contract_type: raw.contract_type || null,
-    remote_type: raw.remote_type || "unknown",
-    posted_at: raw.posted_at || null,
+    remote_type: VALID_REMOTE_TYPES.has(raw.remote_type ?? "")
+      ? (raw.remote_type as "onsite" | "hybrid" | "remote" | "unknown")
+      : "unknown",
+    posted_at: raw.posted_at && !isNaN(Date.parse(raw.posted_at))
+      ? raw.posted_at
+      : null,
     raw_data: raw,
   };
 }
