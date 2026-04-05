@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       jobs: searchResult.jobs,
       totalJSearch: searchResult.totalJSearch,
       totalAdzuna: searchResult.totalAdzuna,
+      totalFirecrawl: searchResult.totalFirecrawl,
       errors: searchResult.errors,
       inserted,
     });

@@ -1,14 +1,18 @@
 # JobPilot - Compact Current
 
 > Etat actuel du projet. Mis a jour a chaque session.
-> Derniere mise a jour : 2026-03-29
+> Derniere mise a jour : 2026-04-04 (session 2)
 
 ---
 
 ## Dernier Commit
 
-`8d0d3d3` chore: remove parasitic CLAUDE.md (latest)
-`bd8dfa9` merge: feat/cowork-next-actions
+`d16ccfc` merge: feat/score-refresh-cv-change
+Branch en cours: `feat/firecrawl-integration` (7 commits, a merger)
+`0bd8f94` docs: mark score-refresh-on-cv-change as implemented
+`5c22559` test(analyze-cv): add tests for automatic score refresh on CV re-analysis
+`7ffa08b` feat(analyze-cv): auto re-score active jobs when CV is re-analyzed
+`d363563` feat(queries): add getActiveJobsByIds for batch active job lookup
 
 ---
 
@@ -20,7 +24,44 @@
 
 ---
 
-## CONTEXTE — Ce qui s'est passe cette session (2026-03-29)
+## CONTEXTE — Session 2026-04-04 (2)
+
+### Integration Firecrawl MCP — en cours (branche feat/firecrawl-integration)
+
+1. **BUG-2 resolu** : PDF parsing remplace unpdf par Firecrawl PDF parser v2 (Rust). Le PDF n'est plus telecharge sur Vercel — seule une signed URL est passee a Firecrawl. `unpdf` retire des dependances.
+
+2. **Source Firecrawl ajoutee au pipeline** : `firecrawl_search` + JSON schema extraction comme 3e source a cote de JSearch et Adzuna. Migration 011 pour le CHECK constraint. Degradation gracieuse — si Firecrawl echoue, les autres sources fonctionnent.
+
+3. **Deduplication amelioree** : normalisation etendue avant hash SHA-256 (suffixes corp, variantes tech React.js/React, provinces canadiennes Ontario/ON, suppression ponctuation). 6 nouveaux tests.
+
+4. **browser-apply v1 fonctionnel** : workflow 3 phases (reconnaissance, decision, execution) via `firecrawl scrape` + `firecrawl interact`. Auto-apply pour Greenhouse/Lever/other avec formulaire simple. Escalade `needs_review` pour LinkedIn/Indeed/Workday/auth. 13 tests. Nouvelle query `updateAtsType`.
+
+5. **Document d'orchestration agent** : `docs/agent-orchestration.md` — cycle quotidien, surface API, regles de decision, gestion credits, colonnes agent.
+
+**Fichiers cles ajoutes :**
+- `src/lib/api/firecrawl.ts` — client wrapper + extractPdfTextFromUrl
+- `src/lib/api/firecrawl-jobs.ts` — fetcher d'offres via search+extract
+- `src/lib/services/browser-apply.ts` — service 3 phases
+- `docs/agent-orchestration.md` — guide orchestration agent
+- `supabase/migrations/011_add_firecrawl_source.sql`
+
+**Note SDK :** Le package est `@mendable/firecrawl-js` v4.18.1 (API v2). Zod v4 est incompatible avec les types Firecrawl (importent Zod v3) — on passe des JSON Schemas bruts au lieu de schemas Zod natifs.
+
+---
+
+## CONTEXTE — Session 2026-04-04 (1)
+
+### Score refresh on CV change — implemente
+
+Quand un utilisateur re-analyse son CV (`analyze-cv`), les scores des jobs actifs precedemment scores avec ce CV sont automatiquement recalcules. Implementation fire-and-forget (non-bloquant pour l'utilisateur), cap a 10 jobs pour rester dans le timeout Vercel 60s. Les jobs restants seront rescores par le prochain cron.
+
+**Fichiers modifies :** `queries/jobs.ts` (nouvelle query `getActiveJobsByIds`), `analyze-cv/route.ts` (helper `refreshScoresForResume`), 4 tests.
+
+**Note technique :** Zod v4 rejette les UUID nil (`00000000-...`) — seuls les UUID v1-v8 valides ou le nil/max canoniques passent. Les tests utilisent un UUID v4 synthetique.
+
+---
+
+## CONTEXTE — Session 2026-03-29
 
 ### Probleme diagnostique : memes offres jour apres jour
 
@@ -80,10 +121,9 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ## Bugs Actifs
 
-### [BUG-2] Upload PDF echoue en production Vercel (analyze-cv HTTP 500)
-- **Priorite** : Haute
-- **Cause** : pdf-parse incompatible Vercel Serverless. `unpdf` installe mais le bug persiste possiblement
-- **Workaround** : Upload en .txt fonctionne
+### ~~[BUG-2] Upload PDF echoue en production Vercel~~ RESOLU
+- **Fix** : Remplace unpdf par Firecrawl PDF parser v2 (branche feat/firecrawl-integration)
+- **Methode** : Signed URL Supabase -> Firecrawl scrape avec parsers: ["pdf"]
 
 ---
 
@@ -116,6 +156,5 @@ Un audit de robustesse a identifie des problemes supplementaires. Les Tier 1 et 
 
 ## Prochaine Action
 
-**Quoi** : UX-3 (lettres de motivation par offre)
-**Pourquoi** : UX-4, next-actions et score-refresh sont faits. UX-3 est la prochaine feature a forte valeur produit (API existe, pas d'UI).
-**Comment** : Spec partielle dans BACKLOG.md. Bouton dans job-card, modale avec editeur, sauvegarder dans applications.cover_letter.
+**Quoi** : Merger `feat/firecrawl-integration`, appliquer migration 011, deployer, tester en production
+**Ensuite** : UX-3 (lettres de motivation par offre) ou ameliorations browser-apply (Persistent Profiles pour LinkedIn)

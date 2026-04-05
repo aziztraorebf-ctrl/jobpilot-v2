@@ -553,3 +553,18 @@ export async function updateAgentStatus(
     throw new Error(`Failed to update agent status: ${error.message}`);
   }
 }
+
+export async function updateAtsType(
+  id: string,
+  atsType: AtsType
+): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("applications")
+    .update({ ats_type: atsType })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Failed to update ATS type: ${error.message}`);
+  }
+}

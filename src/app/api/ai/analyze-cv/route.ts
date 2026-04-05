@@ -42,21 +42,19 @@ export async function POST(request: Request) {
       if (resume.raw_text) {
         rawText = resume.raw_text;
       } else if (resume.file_type === "pdf") {
-        // Download PDF from Storage and extract text on-demand
+        // Generate a signed URL and extract text via Firecrawl PDF parser v2
         const supabase = getSupabase();
-        const { data: fileData, error: downloadError } = await supabase.storage
+        const { data: signedData, error: signError } = await supabase.storage
           .from("resumes")
-          .download(resume.file_path);
-        if (downloadError || !fileData) {
+          .createSignedUrl(resume.file_path, 300);
+        if (signError || !signedData?.signedUrl) {
           return NextResponse.json(
-            { error: "Could not download PDF from storage." },
+            { error: "Could not generate signed URL for PDF." },
             { status: 500 }
           );
         }
-        const buffer = Buffer.from(await fileData.arrayBuffer());
-        const { extractText } = await import("unpdf");
-        const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
-        rawText = text || "";
+        const { extractPdfTextFromUrl } = await import("@/lib/api/firecrawl");
+        rawText = await extractPdfTextFromUrl(signedData.signedUrl);
         if (!rawText.trim()) {
           return NextResponse.json(
             { error: "Could not extract text from PDF. Try uploading a .txt version." },
