@@ -241,7 +241,7 @@ ou si auto-apply impossible :
 ```json
 {
   "mode": "search",
-  "keywords": "emploi temps plein 21$ heure",
+  "keywords": "emploi temps plein 22$ heure",
   "location": "Montreal",
   "limit": 10
 }
@@ -424,17 +424,61 @@ Pour un usage normal (quelques dizaines d'offres/jour, quelques candidatures/sem
 
 ---
 
-## 10. Ce qui n'est PAS encore implemente
+## 10. Candidature par email (sans formulaire web)
+
+Beaucoup d'offres PME quebecoises (Jobillico, Jobboom) demandent "envoyez votre CV a rh@entreprise.com". Pour ces offres, pas besoin de browser-apply :
+
+**Workflow candidature email :**
+1. L'agent detecte une offre avec un email de contact (dans la description ou les champs extraits)
+2. Il genere une lettre de motivation via `/api/ai/cover-letter` (endpoint existant)
+3. Il envoie l'email depuis `jobpilot-aziz@agentmail.to` via les outils MCP AgentMail :
+   - Destinataire : l'email RH de l'entreprise
+   - Objet : "Candidature — [Titre du poste] — Aziz Traore"
+   - Corps : lettre de motivation generee
+   - Piece jointe : CV PDF (URL signee depuis Supabase Storage)
+4. Il cree une application en base avec `application_method: "email"`, `agent_status: "submitted"`
+5. Il surveille la boite AgentMail pour les reponses/confirmations
+
+**Important :** Toujours demander validation humaine avant d'envoyer un email de candidature. L'agent prepare le draft, l'utilisateur approuve, l'agent envoie.
+
+---
+
+## 11. Verification des offres stagnantes
+
+L'endpoint `GET /api/cowork/stale-applications?check_urls=true` peut maintenant verifier si les offres liees aux candidatures stagnantes sont encore actives.
+
+Quand `check_urls=true` est passe, le systeme :
+- Scrape jusqu'a 5 URLs d'offres stagnantes via Firecrawl
+- Detecte les indicateurs de fermeture (404, "position filled", "poste pourvu", etc.)
+- Marque automatiquement les offres fermees en `needs_review` avec la raison
+
+Cela permet de nettoyer le pipeline et d'avoir une vue realiste des candidatures en cours.
+
+---
+
+## 12. Configuration du profil de recherche large
+
+Aziz souhaite ratisser large — trouver un emploi rapidement a ~21-22$/h a Montreal, meme en dehors de son domaine habituel. Le systeme de rotation de profils existe deja dans `search_preferences`.
+
+**Action requise :** Ajouter un 2e profil de recherche avec :
+- Un CV "polyvalent" mettant en avant les competences transferables (gestion d'equipe, service client, bilingue, fiable)
+- Des mots-cles larges : "commis", "reception", "entrepot", "service client", "coordinateur", "agent"
+- La rotation activee pour alterner avec le profil cible (securite)
+
+Cela ne necessite aucun changement de code — c'est une mise a jour des `search_preferences` dans le profil Supabase.
+
+---
+
+## 13. Ce qui n'est PAS encore implemente
 
 - **Persistent Profiles Firecrawl** : S'authentifier une fois sur LinkedIn/Indeed et reutiliser la session. Aujourd'hui, ces sites sont toujours escalades a `needs_review`.
 - **Upload automatique de CV** dans les formulaires : Le browser-apply remplit nom/email mais ne gere pas encore l'upload de fichier PDF.
-- **Lettres de motivation** : L'API de generation existe (`/api/ai/cover-letter`) mais il n'y a pas d'UI ni d'integration dans browser-apply.
-- **Suivi post-candidature** : Verifier si une offre est toujours active via Firecrawl scrape (planifie mais pas implemente).
+- **Integration lettre de motivation dans browser-apply** : L'API de generation existe, le workflow email est documente, mais l'integration directe dans les formulaires web n'est pas faite.
 - **Stale application escalation automatique** : Changer automatiquement le statut apres 14j/30j (planifie).
 
 ---
 
-## 11. URL de base
+## 14. URL de base
 
 - **Production :** L'URL Vercel du projet (verifier dans le dashboard Vercel)
 - **Local :** `http://localhost:3000`
@@ -443,7 +487,7 @@ Tous les endpoints se prefixent avec cette URL de base.
 
 ---
 
-## 12. AgentMail
+## 15. AgentMail
 
 L'agent dispose de sa propre adresse email : **jobpilot-aziz@agentmail.to**
 
@@ -453,7 +497,7 @@ L'agent peut consulter cette boite via les outils MCP AgentMail (list_threads, g
 
 ---
 
-## 13. Resume -- Workflow type de l'agent
+## 16. Resume -- Workflow type de l'agent
 
 **Cycle 1 — Veille (matin, apres le cron) :**
 ```
@@ -469,12 +513,31 @@ L'agent peut consulter cette boite via les outils MCP AgentMail (list_threads, g
 
 **Cycle 2 — Scout (apres la veille) :**
 ```
-1. Appeler POST /api/cowork/scout en mode "targets"
-   avec les pages carrieres habituelles (STM, Ville de Montreal, Jobillico, etc.)
-2. Appeler POST /api/cowork/scout en mode "search"
-   avec des mots-cles larges ("emploi 21$/h Montreal", "embauche rapide", etc.)
+1. Appeler POST /api/cowork/scout en mode "targets" avec les cibles ci-dessous
+2. Appeler POST /api/cowork/scout en mode "search" avec mots-cles larges
 3. Si besoin d'explorer un site complexe : mode "agent" (attention aux credits)
 4. Reporter les decouvertes a l'utilisateur
 5. Si des offres a score eleve ont un formulaire simple :
    proposer de postuler via browser-apply (validation humaine)
+6. Si des offres demandent "envoyez votre CV par email" :
+   preparer le draft email et demander validation
 ```
+
+**Cycle 3 — Nettoyage (hebdomadaire) :**
+```
+1. Appeler GET /api/cowork/stale-applications?check_urls=true&days=7
+2. Reporter les offres fermees detectees
+3. Suggerer de clore les candidatures sans reponse depuis 14j+
+```
+
+**Cibles Scout (mode targets) — IMPORTANT : pas Indeed/Glassdoor/LinkedIn (deja couverts par JSearch) :**
+- `https://www.jobillico.com/recherche-emploi/montreal/quebec/temps-plein`
+- `https://www.jobboom.com/fr/offre-emploi/montreal`
+- `https://www.stm.info/fr/emploi`
+- `https://montreal.ca/emplois`
+- `https://carrieres.desjardins.com`
+
+**Mots-cles Scout (mode search) — utiliser `site:` pour eviter les doublons JSearch :**
+- "emploi temps plein Montreal 21$ heure site:jobillico.com OR site:jobboom.com"
+- "embauche immediate Montreal site:jobillico.com"
+- "commis reception entrepot Montreal site:jobboom.com"

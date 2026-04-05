@@ -64,7 +64,8 @@ Fetches and scores jobs. Uses profile's search_preferences by default.
 
 Returns applications unchanged for N days (default 7) in applied/interview status.
 
-**Query:** `?days=7`
+**Query:** `?days=7` — basic stale list
+**Query:** `?days=7&check_urls=true` — also verifies if job postings are still active via Firecrawl (max 5 URLs per call). Closed postings are auto-marked `needs_review`.
 
 ### POST /api/cowork/scout
 
