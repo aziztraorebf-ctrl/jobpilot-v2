@@ -220,6 +220,67 @@ ou si auto-apply impossible :
 
 ---
 
+### POST /api/cowork/scout
+
+**Role :** Decouverte proactive d'offres invisibles aux APIs (JSearch/Adzuna). Va chercher directement sur les pages carrieres, Jobillico, et partout ou les APIs ne vont pas.
+
+**3 modes :**
+
+**Mode targets** — pour les pages carrieres connues :
+```json
+{
+  "mode": "targets",
+  "urls": [
+    "https://carrieres.stm.info/offres",
+    "https://www.jobillico.com/recherche-emploi/montreal/quebec/temps-plein"
+  ]
+}
+```
+
+**Mode search** — recherche web large :
+```json
+{
+  "mode": "search",
+  "keywords": "emploi temps plein 21$ heure",
+  "location": "Montreal",
+  "limit": 10
+}
+```
+
+**Mode agent** — navigation autonome pour sites complexes (pagination, filtres) :
+```json
+{
+  "mode": "agent",
+  "prompt": "Find all open security and customer service positions at STM paying between $20-25/hour",
+  "urls": ["https://carrieres.stm.info"],
+  "maxCredits": 50
+}
+```
+
+**Retourne :**
+```json
+{
+  "mode": "search",
+  "discovered": 8,
+  "inserted": 5,
+  "scored": 5,
+  "topMatches": [
+    { "title": "Agent de securite", "company": "STM", "score": 78 }
+  ],
+  "errors": [],
+  "creditsUsed": 15
+}
+```
+
+**Quand utiliser quel mode :**
+- `targets` : chaque jour sur les memes pages carrieres (cron quotidien)
+- `search` : quand tu veux explorer de nouveaux types d'emplois
+- `agent` : pour les sites complexes seulement (consomme plus de credits)
+
+**Budget credits :** `maxCredits` dans le mode agent pour limiter. Targets ~3-5 credits/URL, search ~5/resultat, agent ~10-50 par mission.
+
+---
+
 ### GET /api/cowork/stale-applications
 
 **Role :** Lister les candidatures stagnantes (pas de changement depuis N jours).
@@ -382,8 +443,19 @@ Tous les endpoints se prefixent avec cette URL de base.
 
 ---
 
-## 12. Resume -- Workflow type de l'agent
+## 12. AgentMail
 
+L'agent dispose de sa propre adresse email : **jobpilot-aziz@agentmail.to**
+
+Cette adresse est utilisee automatiquement par browser-apply quand il remplit les formulaires de candidature. Les confirmations d'employeurs arrivent dans cette boite, pas dans l'email personnel d'Aziz.
+
+L'agent peut consulter cette boite via les outils MCP AgentMail (list_threads, get_thread) pour verifier les confirmations.
+
+---
+
+## 13. Resume -- Workflow type de l'agent
+
+**Cycle 1 — Veille (matin, apres le cron) :**
 ```
 1. Appeler GET /api/cowork/next-actions
 2. Lire les actions retournees, par priorite :
@@ -392,6 +464,17 @@ Tous les endpoints se prefixent avec cette URL de base.
       appeler POST /api/cowork/browser-apply avec le payload
    c. Si review_stale : noter les candidatures stagnantes
    d. Si notify_matches : appeler POST /api/cowork/notify
-   e. Si idle : attendre le prochain cycle
-3. Repeter
+   e. Si idle : passer au cycle 2
+```
+
+**Cycle 2 — Scout (apres la veille) :**
+```
+1. Appeler POST /api/cowork/scout en mode "targets"
+   avec les pages carrieres habituelles (STM, Ville de Montreal, Jobillico, etc.)
+2. Appeler POST /api/cowork/scout en mode "search"
+   avec des mots-cles larges ("emploi 21$/h Montreal", "embauche rapide", etc.)
+3. Si besoin d'explorer un site complexe : mode "agent" (attention aux credits)
+4. Reporter les decouvertes a l'utilisateur
+5. Si des offres a score eleve ont un formulaire simple :
+   proposer de postuler via browser-apply (validation humaine)
 ```
