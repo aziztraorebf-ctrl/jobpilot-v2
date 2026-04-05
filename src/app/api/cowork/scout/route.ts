@@ -83,25 +83,30 @@ export async function POST(request: Request) {
     let topMatches: { title: string; company: string | null; score: number }[] = [];
 
     if (toScore.length > 0) {
-      const scores = await scoreJobsForProfile(userId, toScore, activeResumeId);
+      try {
+        const scores = await scoreJobsForProfile(userId, toScore, activeResumeId);
 
-      // Auto-mark scored jobs as seen
-      for (const row of rows) {
-        try {
-          await markJobSeen(userId, row.id);
-        } catch {
-          // Best-effort
+        // Auto-mark scored jobs as seen
+        for (const row of rows) {
+          try {
+            await markJobSeen(userId, row.id);
+          } catch {
+            // Best-effort
+          }
         }
-      }
 
-      topMatches = rows
-        .filter((r) => scores[r.id] !== undefined)
-        .map((r) => ({
-          title: r.title,
-          company: r.company_name,
-          score: scores[r.id],
-        }))
-        .sort((a, b) => b.score - a.score);
+        topMatches = rows
+          .filter((r) => scores[r.id] !== undefined)
+          .map((r) => ({
+            title: r.title,
+            company: r.company_name,
+            score: scores[r.id],
+          }))
+          .sort((a, b) => b.score - a.score);
+      } catch (scoreError) {
+        console.error("[scout] Scoring failed (non-blocking):", scoreError instanceof Error ? scoreError.message : scoreError);
+        // Scoring failure should not block the scout — return discovered jobs without scores
+      }
     }
 
     return NextResponse.json({
@@ -114,6 +119,8 @@ export async function POST(request: Request) {
       creditsUsed: scoutResult.creditsUsed,
     });
   } catch (error) {
+    console.error("[scout] Error:", error instanceof Error ? error.message : error);
+    console.error("[scout] Stack:", error instanceof Error ? error.stack : "no stack");
     if (error instanceof ZodError) {
       return apiError(error, "cowork/scout");
     }
