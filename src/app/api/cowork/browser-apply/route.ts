@@ -100,9 +100,11 @@ export async function POST(request: Request) {
     }
 
     const profile = profiles[0];
+    // Use AgentMail email for applications (keeps confirmations separate from personal inbox)
+    const agentEmail = process.env.AGENT_EMAIL || profile.email || "";
     const result = await executeApplication(recon.scrapeId, {
       name: profile.full_name || "Applicant",
-      email: profile.email || "",
+      email: agentEmail,
     });
 
     if (result.success) {
