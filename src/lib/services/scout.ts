@@ -1,10 +1,16 @@
-import { getFirecrawlClient } from "@/lib/api/firecrawl";
 import {
   normalizeFirecrawlJob,
   type FirecrawlJobExtract,
   FIRECRAWL_JOB_SCHEMA,
 } from "@/lib/api/firecrawl-jobs";
+import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import type { UnifiedJob } from "@/lib/schemas/job";
+
+import { getFirecrawlClient } from "@/lib/api/firecrawl";
+
+function isFirecrawlAvailable(): boolean {
+  return Boolean(process.env.FIRECRAWL_API_KEY);
+}
 
 // --- Types ---
 
@@ -38,6 +44,9 @@ export interface ScoutResult {
 // --- Mode 1: Targets ---
 
 async function scoutTargets(input: ScoutTargetsInput): Promise<ScoutResult> {
+  if (!isFirecrawlAvailable()) {
+    return { jobs: [], errors: ["Firecrawl API key not configured — targets mode requires Firecrawl"], creditsUsed: 0 };
+  }
   const client = getFirecrawlClient();
   const jobs: UnifiedJob[] = [];
   const errors: string[] = [];
@@ -93,6 +102,16 @@ async function scoutTargets(input: ScoutTargetsInput): Promise<ScoutResult> {
 // --- Mode 2: Search ---
 
 async function scoutSearch(input: ScoutSearchInput): Promise<ScoutResult> {
+  // If Firecrawl is available, use it for richer results
+  if (isFirecrawlAvailable()) {
+    return scoutSearchFirecrawl(input);
+  }
+
+  // Fallback: use JSearch + Adzuna (free, no credits needed)
+  return scoutSearchFree(input);
+}
+
+async function scoutSearchFirecrawl(input: ScoutSearchInput): Promise<ScoutResult> {
   const client = getFirecrawlClient();
   const errors: string[] = [];
   let creditsUsed = 0;
@@ -128,9 +147,26 @@ async function scoutSearch(input: ScoutSearchInput): Promise<ScoutResult> {
   return { jobs, errors, creditsUsed };
 }
 
+async function scoutSearchFree(input: ScoutSearchInput): Promise<ScoutResult> {
+  const result = await aggregateJobSearch({
+    keywords: input.keywords,
+    location: input.location,
+    sources: ["jsearch", "adzuna"],
+  });
+
+  return {
+    jobs: result.jobs,
+    errors: result.errors,
+    creditsUsed: 0,
+  };
+}
+
 // --- Mode 3: Agent ---
 
 async function scoutAgent(input: ScoutAgentInput): Promise<ScoutResult> {
+  if (!isFirecrawlAvailable()) {
+    return { jobs: [], errors: ["Firecrawl API key not configured — agent mode requires Firecrawl"], creditsUsed: 0 };
+  }
   const client = getFirecrawlClient();
   const errors: string[] = [];
 

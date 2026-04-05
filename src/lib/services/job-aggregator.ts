@@ -21,7 +21,8 @@ export interface AggregateSearchResult {
 }
 
 export async function aggregateJobSearch(params: AggregateSearchParams): Promise<AggregateSearchResult> {
-  const sources = params.sources || ["jsearch", "adzuna", "firecrawl"];
+  // Firecrawl excluded from default sources (credit-based, use via /api/cowork/scout instead)
+  const sources = params.sources || ["jsearch", "adzuna"];
   const errors: string[] = [];
   let jsearchJobs: UnifiedJob[] = [];
   let adzunaJobs: UnifiedJob[] = [];
