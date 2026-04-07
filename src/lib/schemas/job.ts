@@ -42,7 +42,7 @@ export type AdzunaJob = z.infer<typeof AdzunaJobSchema>;
 
 // --- Unified job type ---
 export const UnifiedJobSchema = z.object({
-  source: z.enum(["jooble", "adzuna", "jsearch", "firecrawl", "manual"]),
+  source: z.enum(["jooble", "adzuna", "jsearch", "firecrawl", "tavily", "manual"]),
   source_id: z.string().nullable(),
   source_url: z.url(),
   dedup_hash: z.string(),
