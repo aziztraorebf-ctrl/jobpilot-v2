@@ -3,6 +3,8 @@ import {
   type FirecrawlJobExtract,
   FIRECRAWL_JOB_SCHEMA,
 } from "@/lib/api/firecrawl-jobs";
+import { searchTavily } from "@/lib/api/tavily-jobs";
+import { isTavilyAvailable } from "@/lib/api/tavily";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
 import type { UnifiedJob } from "@/lib/schemas/job";
 
@@ -102,13 +104,32 @@ async function scoutTargets(input: ScoutTargetsInput): Promise<ScoutResult> {
 // --- Mode 2: Search ---
 
 async function scoutSearch(input: ScoutSearchInput): Promise<ScoutResult> {
-  // If Firecrawl is available, use it for richer results
+  // Prefer Tavily for web search (cheaper, better search relevance)
+  if (isTavilyAvailable()) {
+    return scoutSearchTavily(input);
+  }
+
+  // Fallback to Firecrawl if available
   if (isFirecrawlAvailable()) {
     return scoutSearchFirecrawl(input);
   }
 
-  // Fallback: use JSearch + Adzuna (free, no credits needed)
+  // Final fallback: free sources
   return scoutSearchFree(input);
+}
+
+async function scoutSearchTavily(input: ScoutSearchInput): Promise<ScoutResult> {
+  const result = await searchTavily({
+    keywords: input.keywords,
+    location: input.location,
+    limit: input.limit || 10,
+  });
+
+  return {
+    jobs: result.jobs,
+    errors: [],
+    creditsUsed: 1,
+  };
 }
 
 async function scoutSearchFirecrawl(input: ScoutSearchInput): Promise<ScoutResult> {
