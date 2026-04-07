@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
         const allJobs: UnifiedJob[] = [];
         for (const query of activeKeywords) {
-          const result = await aggregateJobSearch({ keywords: query, location });
+          const result = await aggregateJobSearch({ keywords: query, location, sources: ["jsearch", "adzuna", "tavily"] });
           allJobs.push(...result.jobs);
         }
 
