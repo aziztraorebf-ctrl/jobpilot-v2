@@ -5,7 +5,7 @@
 export interface SearchPreferences {
   keywords: string[];
   locations: string[];
-  sources: ("jsearch" | "adzuna")[];
+  sources: ("jsearch" | "adzuna" | "tavily")[];
   remote_only: boolean;
   alert_threshold: number;
   notification_frequency: "manual" | "daily" | "weekly";
@@ -25,7 +25,7 @@ export interface SearchPreferences {
 const DEFAULTS: SearchPreferences = {
   keywords: [],
   locations: ["Canada"],
-  sources: ["jsearch", "adzuna"],
+  sources: ["jsearch", "adzuna", "tavily"],
   remote_only: false,
   alert_threshold: 60,
   notification_frequency: "manual",
