@@ -16,7 +16,7 @@ L'app fonctionne en **mode 100% automatise**. Les offres arrivent automatiquemen
 - **Frontend/Backend :** Next.js 16 (App Router), TypeScript, React 19, TailwindCSS, shadcn/ui
 - **Base de donnees :** Supabase PostgreSQL
 - **IA scoring/parsing :** OpenAI GPT-4o-mini
-- **Sources d'offres :** JSearch, Adzuna, Firecrawl (web scraping)
+- **Sources d'offres :** JSearch, Adzuna, Tavily (web search), Firecrawl (web scraping)
 - **Automatisation navigateur :** Firecrawl scrape + interact
 - **Email :** Resend + React Email
 - **Deploiement :** Vercel (hobby tier, timeout 60s)
@@ -30,7 +30,7 @@ Le pipeline tourne automatiquement chaque jour :
 | Heure (UTC) | Action | Detail |
 |-------------|--------|--------|
 | 2:00 AM | Expiration | Supprime les offres perimees : 3j si traitees, 7j si jamais vues, 30j max. Les offres avec une candidature active (saved/applying/applied/interview/offer) ne sont JAMAIS expirees. |
-| 4:00 AM | Fetch + Score | Recherche des offres sur JSearch, Adzuna et Firecrawl en parallele. Deduplique, insere en base, score chaque offre vs le CV actif, desactive les scores trop bas, marque les scorees comme "vues". |
+| 4:00 AM | Fetch + Score | Recherche des offres sur JSearch, Adzuna et Tavily en parallele. Deduplique, insere en base, score chaque offre vs le CV actif, desactive les scores trop bas, marque les scorees comme "vues". |
 | 4:30 AM | Notifications | Envoie un email digest avec les meilleures offres du jour (score >= seuil d'alerte du profil). |
 
 **L'agent peut aussi declencher des actions a la demande** via les endpoints Cowork decrits ci-dessous.
@@ -49,13 +49,20 @@ Le pipeline tourne automatiquement chaque jour :
 - Quota : 2500 requetes/mois
 - Fournit categorie, type de contrat, salaire predit ou reel
 
-### Firecrawl (web scraping + IA) -- NOUVEAU
+### Tavily (web search)
+- Recherche web optimisee pour les job boards Quebec-locaux que JSearch/Adzuna ne couvrent pas
+- Cible : Jobillico, Jobboom, emploiquebec.gouv.qc.ca, pages carrieres d'employeurs directs (Garda, Securitas)
+- Exclut automatiquement Indeed/Glassdoor/LinkedIn/ZipRecruiter (deja couverts par JSearch)
+- Quota : ~1000 credits/mois (free tier), consommation ~30/mois (1 search/jour)
+- Les offres Tavily apparaissent avec `source: "tavily"` dans le meme format UnifiedJob
+
+### Firecrawl (web scraping + IA)
 - Scrape n'importe quelle page web et extrait des donnees structurees via IA
 - Pas de quota fixe, fonctionne par credits (surveiller la consommation)
-- Ideal pour les sites que JSearch/Adzuna ne couvrent pas : Jobillico, Jobboom, pages carrieres d'employeurs directs
-- Peut aussi parser des PDFs (utilise pour l'analyse de CV)
+- Utilise pour : Scout mode targets/agent, browser-apply, parsing de PDF (analyse de CV)
+- **N'est plus utilise pour la recherche web** (remplace par Tavily dans le cron et Scout mode search)
 
-Les trois sources sont appelees en parallele. Si l'une echoue, les deux autres fonctionnent normalement.
+Les quatre sources sont appelees en parallele dans le cron quotidien (JSearch, Adzuna, Tavily). Firecrawl reste disponible pour Scout targets/agent et browser-apply. Si une source echoue, les autres fonctionnent normalement.
 
 ### Deduplication
 Les offres identiques entre sources sont detectees par un hash normalise (titre + entreprise + localisation). La normalisation gere :
@@ -164,7 +171,7 @@ ou en query parameter : `?secret=<CRON_SECRET>`
 {
   "keywords": "security supervisor",
   "location": "Montreal",
-  "sources": ["jsearch", "adzuna", "firecrawl"]
+  "sources": ["jsearch", "adzuna", "tavily"]
 }
 ```
 Si aucun corps n'est fourni, utilise les preferences de recherche du profil.
@@ -237,7 +244,7 @@ ou si auto-apply impossible :
 }
 ```
 
-**Mode search** — recherche web large :
+**Mode search** — recherche web large (utilise Tavily automatiquement, fallback Firecrawl puis JSearch+Adzuna) :
 ```json
 {
   "mode": "search",
@@ -337,7 +344,7 @@ ou si auto-apply impossible :
 ### Table job_listings
 | Colonne | Role |
 |---------|------|
-| `source` | Origine : jooble, adzuna, jsearch, firecrawl, manual |
+| `source` | Origine : jooble, adzuna, jsearch, firecrawl, tavily, manual |
 | `dedup_hash` | Hash unique pour deduplication |
 | `is_active` | false = expire ou desactive par scoring |
 | `profile_label` | Quel profil de recherche a trouve cette offre |
