@@ -1,6 +1,8 @@
 import { searchJSearch } from "@/lib/api/jsearch";
 import { searchAdzuna } from "@/lib/api/adzuna";
 import { searchFirecrawl } from "@/lib/api/firecrawl-jobs";
+import { searchTavily } from "@/lib/api/tavily-jobs";
+import { isTavilyAvailable } from "@/lib/api/tavily";
 import { deduplicateJobs } from "./deduplicator";
 import type { UnifiedJob } from "@/lib/schemas/job";
 
@@ -9,7 +11,7 @@ export interface AggregateSearchParams {
   location?: string;
   salaryMin?: number;
   page?: number;
-  sources?: ("jsearch" | "adzuna" | "firecrawl")[];
+  sources?: ("jsearch" | "adzuna" | "firecrawl" | "tavily")[];
 }
 
 export interface AggregateSearchResult {
@@ -17,6 +19,7 @@ export interface AggregateSearchResult {
   totalJSearch: number;
   totalAdzuna: number;
   totalFirecrawl: number;
+  totalTavily: number;
   errors: string[];
 }
 
@@ -27,9 +30,11 @@ export async function aggregateJobSearch(params: AggregateSearchParams): Promise
   let jsearchJobs: UnifiedJob[] = [];
   let adzunaJobs: UnifiedJob[] = [];
   let firecrawlJobs: UnifiedJob[] = [];
+  let tavilyJobs: UnifiedJob[] = [];
   let totalJSearch = 0;
   let totalAdzuna = 0;
   let totalFirecrawl = 0;
+  let totalTavily = 0;
 
   const promises: Promise<void>[] = [];
 
@@ -88,10 +93,27 @@ export async function aggregateJobSearch(params: AggregateSearchParams): Promise
     );
   }
 
+  if (sources.includes("tavily") && isTavilyAvailable()) {
+    promises.push(
+      searchTavily({
+        keywords: params.keywords,
+        location: params.location,
+        limit: 10,
+      })
+        .then((result) => {
+          tavilyJobs = result.jobs;
+          totalTavily = result.total;
+        })
+        .catch((err) => {
+          errors.push(`Tavily: ${err instanceof Error ? err.message : String(err)}`);
+        })
+    );
+  }
+
   await Promise.allSettled(promises);
 
-  const allJobs = [...jsearchJobs, ...adzunaJobs, ...firecrawlJobs];
+  const allJobs = [...jsearchJobs, ...adzunaJobs, ...firecrawlJobs, ...tavilyJobs];
   const deduplicated = deduplicateJobs(allJobs);
 
-  return { jobs: deduplicated, totalJSearch, totalAdzuna, totalFirecrawl, errors };
+  return { jobs: deduplicated, totalJSearch, totalAdzuna, totalFirecrawl, totalTavily, errors };
 }

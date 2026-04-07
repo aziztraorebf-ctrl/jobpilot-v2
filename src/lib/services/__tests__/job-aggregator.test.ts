@@ -18,6 +18,27 @@ vi.mock("@/lib/api/jsearch", () => ({
   }),
 }));
 
+vi.mock("@/lib/api/tavily-jobs", () => ({
+  searchTavily: vi.fn().mockResolvedValue({
+    jobs: [
+      {
+        source: "tavily", source_id: null, source_url: "https://jobillico.com/offer/1",
+        dedup_hash: "hash_c", title: "Superviseur", company_name: "GardaWorld",
+        location: "Montreal", location_lat: null, location_lng: null,
+        description: "Superviseur securite", salary_min: null, salary_max: null,
+        salary_currency: "CAD", salary_is_predicted: false,
+        job_type: null, category: null, contract_type: null,
+        remote_type: "unknown", posted_at: null, raw_data: {},
+      },
+    ],
+    total: 1,
+  }),
+}));
+
+vi.mock("@/lib/api/tavily", () => ({
+  isTavilyAvailable: vi.fn().mockReturnValue(true),
+}));
+
 vi.mock("@/lib/api/adzuna", () => ({
   searchAdzuna: vi.fn().mockResolvedValue({
     jobs: [
@@ -49,6 +70,19 @@ describe("aggregateJobSearch", () => {
     const params: AggregateSearchParams = { keywords: "analyst", location: "Montreal" };
     const result = await aggregateJobSearch(params);
     expect(result.jobs).toHaveLength(2);
+  });
+
+  it("includes tavily results when tavily source is requested", async () => {
+    const params: AggregateSearchParams = {
+      keywords: "superviseur",
+      location: "Montreal",
+      sources: ["jsearch", "adzuna", "tavily"],
+    };
+    const result = await aggregateJobSearch(params);
+    expect(result.totalTavily).toBe(1);
+    const tavilyJob = result.jobs.find((j) => j.source === "tavily");
+    expect(tavilyJob).toBeDefined();
+    expect(tavilyJob?.company_name).toBe("GardaWorld");
   });
 
   it("prefers adzuna version of duplicates (richer data)", async () => {
