@@ -7,8 +7,8 @@ export const SearchProfileSchema = z.object({
 });
 
 export const RotationPrefsSchema = z.object({
-  rotation_profiles: z.array(SearchProfileSchema).min(1).max(2),
-  active_profile_index: z.number().int().min(0).max(1).default(0),
+  rotation_profiles: z.array(SearchProfileSchema).min(1).max(3),
+  active_profile_index: z.number().int().min(0).max(2).default(0),
   rotation_enabled: z.boolean().default(false),
   rotation_days: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(2),
   last_rotation_at: z.string().datetime().nullable().default(null),
