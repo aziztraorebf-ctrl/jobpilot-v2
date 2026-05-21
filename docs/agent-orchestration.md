@@ -54,7 +54,7 @@ Fetches and scores jobs. Uses profile's search_preferences by default.
 
 **Phase 3 — Execution:** Uses `firecrawl interact` to fill form fields with profile data (name, AgentMail email) and submit.
 
-**AgentMail:** Applications use `jobpilot-aziz@agentmail.to` as the contact email. Confirmations arrive there, not in the personal inbox. The agent can check this inbox via AgentMail MCP tools.
+**AgentMail:** Applications use `soreline427@agentmail.to` as the contact email. Confirmations arrive there, not in the personal inbox. The agent can check this inbox via AgentMail MCP tools.
 
 **Response:** `{ status, phase, applicationId, atsType?, reason?, error?, message? }`
 

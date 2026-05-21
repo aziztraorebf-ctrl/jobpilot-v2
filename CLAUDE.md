@@ -16,7 +16,7 @@
 - Firecrawl : utiliser JSON Schemas bruts (Record<string, unknown>), pas Zod natif (incompatibilite v3/v4)
 - Scout targets : jamais Indeed/Glassdoor/LinkedIn (couverts par JSearch) — utiliser Jobillico, Jobboom, pages carrieres
 - browser-apply : escalader LinkedIn/Indeed/Workday a needs_review (pas d'auto-apply)
-- AgentMail : jobpilot-aziz@agentmail.to pour les candidatures (pas l'email personnel)
+- AgentMail : soreline427@agentmail.to pour les candidatures (pas l'email personnel)
 
 ## Guardrails
 - Verifier visuellement avec Playwright AVANT de corriger des problemes UI

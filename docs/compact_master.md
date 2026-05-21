@@ -23,7 +23,7 @@ Application personnelle d'assistance a la recherche d'emploi 100% automatisee. A
 | Jobs APIs | JSearch, Adzuna |
 | Web Scraping | Firecrawl (`@mendable/firecrawl-js` v4.18.1) — scrape, search, extract, interact, agent |
 | Email (notifications) | Resend + React Email |
-| Email (candidatures) | AgentMail (jobpilot-aziz@agentmail.to) |
+| Email (candidatures) | AgentMail (soreline427@agentmail.to) |
 | i18n | next-intl (FR/EN) |
 | Auth | Mot de passe unique en env var + middleware |
 | Tests | Vitest (unit/integration), Playwright (E2E) |
@@ -60,7 +60,7 @@ Application personnelle d'assistance a la recherche d'emploi 100% automatisee. A
 | Scout | Endpoint dedie /api/cowork/scout (3 modes) | Decouverte proactive hors APIs (Jobillico, pages carrieres) |
 | browser-apply | 3 phases (recon, decision, execution) | Firecrawl scrape + interact, escalade si auth requise |
 | Agent columns | agent_status, ats_type, agent_notes | Tracking candidatures par agent IA |
-| AgentMail | jobpilot-aziz@agentmail.to | Email dedie pour candidatures, separe de l'inbox perso |
+| AgentMail | soreline427@agentmail.to | Email dedie pour candidatures, separe de l'inbox perso |
 | Mode operatoire | 100% automatise | Pipeline continu : expire → fetch → score → notify |
 | Expiry lifecycle | 3j processed, 7j unseen, 30j absolute (RPC) | Jobs avec candidature active jamais expires |
 | Query scaling | RPC Postgres anti-joins (NOT EXISTS) | Remplace NOT IN string concat |

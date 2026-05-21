@@ -33,7 +33,7 @@ JobPilot automatise le cycle complet de recherche d'emploi :
 | APIs emploi | JSearch (RapidAPI) + Adzuna API v1 |
 | Web Scraping | Firecrawl (`@mendable/firecrawl-js` v4.18.1) |
 | Email (notifications) | Resend + React Email |
-| Email (candidatures) | AgentMail (jobpilot-aziz@agentmail.to) |
+| Email (candidatures) | AgentMail (soreline427@agentmail.to) |
 | i18n | next-intl (FR/EN) |
 | Tests | Vitest (274 tests) + Playwright (E2E) |
 | Validation | Zod v4 |
@@ -161,7 +161,7 @@ ADZUNA_COUNTRY=ca
 FIRECRAWL_API_KEY=
 
 # AgentMail (email pour candidatures)
-AGENT_EMAIL=jobpilot-aziz@agentmail.to
+AGENT_EMAIL=soreline427@agentmail.to
 
 # Cron Security
 CRON_SECRET=
