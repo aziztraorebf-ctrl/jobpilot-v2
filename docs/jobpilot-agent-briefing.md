@@ -438,7 +438,7 @@ Beaucoup d'offres PME quebecoises (Jobillico, Jobboom) demandent "envoyez votre 
 **Workflow candidature email :**
 1. L'agent detecte une offre avec un email de contact (dans la description ou les champs extraits)
 2. Il genere une lettre de motivation via `/api/ai/cover-letter` (endpoint existant)
-3. Il envoie l'email depuis `jobpilot-aziz@agentmail.to` via les outils MCP AgentMail :
+3. Il envoie l'email depuis `soreline427@agentmail.to` via les outils MCP AgentMail :
    - Destinataire : l'email RH de l'entreprise
    - Objet : "Candidature — [Titre du poste] — Aziz Traore"
    - Corps : lettre de motivation generee
@@ -496,7 +496,7 @@ Tous les endpoints se prefixent avec cette URL de base.
 
 ## 15. AgentMail
 
-L'agent dispose de sa propre adresse email : **jobpilot-aziz@agentmail.to**
+L'agent dispose de sa propre adresse email : **soreline427@agentmail.to**
 
 Cette adresse est utilisee automatiquement par browser-apply quand il remplit les formulaires de candidature. Les confirmations d'employeurs arrivent dans cette boite, pas dans l'email personnel d'Aziz.
 

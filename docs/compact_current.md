@@ -21,7 +21,7 @@
 **Deploy** : Vercel production — deploye depuis `1766fbd`
 **DB** : Supabase PostgreSQL (11 migrations, dont 011 firecrawl source)
 **CVs** : 3 en rotation (Securite, Coordination, Large)
-**AgentMail** : jobpilot-aziz@agentmail.to (actif)
+**AgentMail** : soreline427@agentmail.to (actif)
 
 ---
 
@@ -43,7 +43,7 @@
 
 **3. Endpoint Scout (2 commits, branche mergee)**
 - `POST /api/cowork/scout` : 3 modes (targets, search, agent) pour decouverte proactive d'offres hors JSearch/Adzuna (Jobillico, Jobboom, pages carrieres employeurs). 6 tests.
-- AgentMail configure (jobpilot-aziz@agentmail.to). browser-apply utilise cet email pour les candidatures.
+- AgentMail configure (soreline427@agentmail.to). browser-apply utilise cet email pour les candidatures.
 
 **4. Ameliorations (2 commits, branche mergee)**
 - Verification offres stagnantes : `stale-applications?check_urls=true` scrape les URLs via Firecrawl et detecte les offres fermees (404, "poste pourvu"). 5 tests.
