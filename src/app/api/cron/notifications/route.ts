@@ -20,6 +20,7 @@ export async function GET(request: Request) {
   try {
     const profiles = await getProfilesWithAutoSearch();
     let emailsSent = 0;
+    let emailsFailed = 0;
 
     for (const profile of profiles) {
       try {
@@ -68,10 +69,18 @@ export async function GET(request: Request) {
             })
           );
 
-          await sendEmail({
+          const summaryResult = await sendEmail({
             subject: `[JobPilot] Resume hebdomadaire - ${weekOf}`,
             html: summaryHtml,
           });
+          if (!summaryResult.success) {
+            emailsFailed++;
+            console.error(
+              `[Cron notifications] Weekly summary email failed for profile ${profile.id}:`,
+              summaryResult.error
+            );
+            throw new Error(`Email send failed: ${summaryResult.error}`);
+          }
           emailsSent++;
         }
 
@@ -102,10 +111,18 @@ export async function GET(request: Request) {
             })
           );
 
-          await sendEmail({
+          const reminderResult = await sendEmail({
             subject: `[JobPilot] ${apps.length} candidature(s) a relancer`,
             html: reminderHtml,
           });
+          if (!reminderResult.success) {
+            emailsFailed++;
+            console.error(
+              `[Cron notifications] Follow-up reminder email failed for profile ${profile.id}:`,
+              reminderResult.error
+            );
+            throw new Error(`Email send failed: ${reminderResult.error}`);
+          }
           emailsSent++;
         }
       } catch (profileError: unknown) {
@@ -114,7 +131,10 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ message: "Notifications sent", emailsSent });
+    return NextResponse.json(
+      { message: "Notifications sent", emailsSent, emailsFailed },
+      { status: emailsFailed > 0 ? 500 : 200 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Cron notifications]", message);

@@ -27,6 +27,8 @@ export async function GET(request: Request) {
     }
 
     let totalInserted = 0;
+    let emailsSent = 0;
+    let emailsFailed = 0;
     const supabase = getSupabase();
 
     for (const profile of profiles) {
@@ -157,10 +159,19 @@ export async function GET(request: Request) {
             })
           );
 
-          await sendEmail({
+          const alertResult = await sendEmail({
             subject: `[JobPilot] ${highScoreJobs.length} nouvelle(s) offre(s) correspondante(s)`,
             html,
           });
+          if (!alertResult.success) {
+            emailsFailed++;
+            console.error(
+              `[Cron fetch-jobs] High-score alert email failed for profile ${profile.id}:`,
+              alertResult.error
+            );
+            throw new Error(`Email send failed: ${alertResult.error}`);
+          }
+          emailsSent++;
         }
       } catch (profileError: unknown) {
         const msg = profileError instanceof Error ? profileError.message : String(profileError);
@@ -168,7 +179,10 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ message: "Cron completed", fetched: totalInserted });
+    return NextResponse.json(
+      { message: "Cron completed", fetched: totalInserted, emailsSent, emailsFailed },
+      { status: emailsFailed > 0 ? 500 : 200 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Cron fetch-jobs]", message);
