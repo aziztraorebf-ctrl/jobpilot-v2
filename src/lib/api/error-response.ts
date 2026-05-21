@@ -11,6 +11,38 @@ const KNOWN_ERROR_CODES: Record<string, { status: number; code: string }> = {
   "SCORING_FAILED": { status: 502, code: "SCORING_FAILED" },
 };
 
+/**
+ * Diagnostic 400 response for ZodError with whitelisted issue fields.
+ * Use when the caller (typically an external agent) needs to see exactly
+ * what's wrong with their payload structure. Filters out `received`/`input`
+ * fields from Zod issues to avoid leaking values sent in malformed requests.
+ */
+export function zodErrorResponse(
+  error: ZodError,
+  expected: string,
+  rawPayload: unknown
+) {
+  const safeIssues = error.issues.map((issue) => ({
+    path: issue.path,
+    code: issue.code,
+    message: issue.message,
+  }));
+  const receivedKeys =
+    rawPayload && typeof rawPayload === "object"
+      ? Object.keys(rawPayload as Record<string, unknown>)
+      : null;
+  return NextResponse.json(
+    {
+      error: "Invalid payload structure",
+      code: "VALIDATION_ERROR",
+      expected,
+      received_keys: receivedKeys,
+      zod_issues: safeIssues,
+    },
+    { status: 400 }
+  );
+}
+
 export function apiError(error: unknown, context: string) {
   if (error instanceof ZodError) {
     return NextResponse.json(
