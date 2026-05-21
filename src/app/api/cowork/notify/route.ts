@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
-import { apiError } from "@/lib/api/error-response";
+import { apiError, zodErrorResponse } from "@/lib/api/error-response";
 import { sendEmail } from "@/lib/services/email-service";
 import {
   buildMatchNotificationHtml,
@@ -52,8 +52,9 @@ export async function POST(request: Request) {
     return unauthorizedResponse();
   }
 
+  let raw: unknown;
   try {
-    const raw = await request.json();
+    raw = await request.json();
     const { type, data } = BodySchema.parse(raw);
 
     let html: string;
@@ -86,7 +87,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ sent: true, emailId: result.id });
   } catch (error) {
     if (error instanceof ZodError) {
-      return apiError(error, "cowork/notify");
+      return zodErrorResponse(
+        error,
+        "{ type: 'new_matches' | 'stale_reminder', data: object }",
+        raw
+      );
     }
     return apiError(error, "cowork/notify");
   }
