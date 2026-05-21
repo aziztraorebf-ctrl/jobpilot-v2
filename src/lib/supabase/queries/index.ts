@@ -1,3 +1,6 @@
+export { insertCronRun, getLatestCronRuns } from "./cron-runs";
+export type { CronRunRecord, CronRunSummary } from "./cron-runs";
+
 export { getProfile, updateProfile, getProfilesWithAutoSearch, getManualSearchStatus, incrementManualSearch } from "./profiles";
 export type { Profile, ProfileUpdate, ManualSearchStatus } from "./profiles";
 

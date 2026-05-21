@@ -353,6 +353,36 @@ export type Database = {
           },
         ]
       }
+      cron_runs: {
+        Row: {
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metadata: Json
+          ran_at: string
+          route: string
+          success: boolean
+        }
+        Insert: {
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          ran_at?: string
+          route: string
+          success: boolean
+        }
+        Update: {
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          ran_at?: string
+          route?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       job_listings: {
         Row: {
           category: string | null
