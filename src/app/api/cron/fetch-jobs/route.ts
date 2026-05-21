@@ -1,5 +1,6 @@
 // src/app/api/cron/fetch-jobs/route.ts
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { getSupabase } from "@/lib/supabase/client";
 import { aggregateJobSearch } from "@/lib/services/job-aggregator";
@@ -14,12 +15,16 @@ import { getActiveSearchProfile, shouldRotate, getNextRotationIndex } from "@/li
 import { scoreJobsForProfile } from "@/lib/services/auto-scorer";
 import { MIN_DISPLAY_SCORE } from "@/lib/config/scoring";
 import type { UnifiedJob } from "@/lib/schemas/job";
+import { insertCronRun } from "@/lib/supabase/queries";
+
+const ROUTE = "/api/cron/fetch-jobs";
 
 export async function GET(request: Request) {
   if (!verifyCronSecret(request)) {
     return unauthorizedResponse();
   }
 
+  const startedAt = Date.now();
   try {
     const profiles = await getProfilesWithAutoSearch();
     if (profiles.length === 0) {
@@ -176,9 +181,18 @@ export async function GET(request: Request) {
       } catch (profileError: unknown) {
         const msg = profileError instanceof Error ? profileError.message : String(profileError);
         console.error(`[Cron fetch-jobs] Profile ${profile.id} failed:`, msg);
+        Sentry.captureException(profileError, {
+          tags: { cron: "fetch-jobs", profileId: profile.id },
+        });
       }
     }
 
+    await insertCronRun({
+      route: ROUTE,
+      success: emailsFailed === 0,
+      duration_ms: Date.now() - startedAt,
+      metadata: { fetched: totalInserted, emailsSent, emailsFailed },
+    });
     return NextResponse.json(
       { message: "Cron completed", fetched: totalInserted, emailsSent, emailsFailed },
       { status: emailsFailed > 0 ? 500 : 200 }
@@ -186,6 +200,13 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Cron fetch-jobs]", message);
+    Sentry.captureException(error, { tags: { cron: "fetch-jobs" } });
+    await insertCronRun({
+      route: ROUTE,
+      success: false,
+      duration_ms: Date.now() - startedAt,
+      error_message: message,
+    });
     return NextResponse.json({ error: "Cron failed" }, { status: 500 });
   }
 }

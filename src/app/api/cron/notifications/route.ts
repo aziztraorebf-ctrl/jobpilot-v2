@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { verifyCronSecret, unauthorizedResponse } from "@/lib/api/cron-auth";
 import { render } from "@react-email/components";
 import {
@@ -11,12 +12,16 @@ import {
 import { sendEmail } from "@/lib/services/email-service";
 import { WeeklySummary } from "@/emails/weekly-summary";
 import { FollowUpReminder } from "@/emails/follow-up-reminder";
+import { insertCronRun } from "@/lib/supabase/queries";
+
+const ROUTE = "/api/cron/notifications";
 
 export async function GET(request: Request) {
   if (!verifyCronSecret(request)) {
     return unauthorizedResponse();
   }
 
+  const startedAt = Date.now();
   try {
     const profiles = await getProfilesWithAutoSearch();
     let emailsSent = 0;
@@ -128,9 +133,18 @@ export async function GET(request: Request) {
       } catch (profileError: unknown) {
         const msg = profileError instanceof Error ? profileError.message : String(profileError);
         console.error(`[Cron notifications] Profile ${profile.id} failed:`, msg);
+        Sentry.captureException(profileError, {
+          tags: { cron: "notifications", profileId: profile.id },
+        });
       }
     }
 
+    await insertCronRun({
+      route: ROUTE,
+      success: emailsFailed === 0,
+      duration_ms: Date.now() - startedAt,
+      metadata: { emailsSent, emailsFailed },
+    });
     return NextResponse.json(
       { message: "Notifications sent", emailsSent, emailsFailed },
       { status: emailsFailed > 0 ? 500 : 200 }
@@ -138,6 +152,13 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Cron notifications]", message);
+    Sentry.captureException(error, { tags: { cron: "notifications" } });
+    await insertCronRun({
+      route: ROUTE,
+      success: false,
+      duration_ms: Date.now() - startedAt,
+      error_message: message,
+    });
     return NextResponse.json({ error: "Cron failed" }, { status: 500 });
   }
 }
