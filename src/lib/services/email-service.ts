@@ -1,6 +1,15 @@
 import { Resend } from "resend";
+import * as Sentry from "@sentry/nextjs";
 
 const SENDER = "JobPilot <onboarding@resend.dev>";
+
+function reportEmailFailure(error: string, subject: string): void {
+  Sentry.captureMessage(`sendEmail failed: ${error}`, {
+    level: "error",
+    tags: { service: "email", provider: "resend" },
+    extra: { subject },
+  });
+}
 
 interface SendEmailOptions {
   subject: string;
@@ -37,12 +46,15 @@ export async function sendEmail(
     });
 
     if (error) {
-      return { success: false, error: `${error.name}: ${error.message}` };
+      const formatted = `${error.name}: ${error.message}`;
+      reportEmailFailure(formatted, options.subject);
+      return { success: false, error: formatted };
     }
 
     return { success: true, id: data?.id };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    reportEmailFailure(message, options.subject);
     return { success: false, error: message };
   }
 }
