@@ -57,8 +57,40 @@ interface TavilyResult {
   score?: number;
 }
 
+function extractSalary(content: string): { min: number | null; max: number | null } {
+  const rangeMatch = content.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*\$\s*\/\s*h/i);
+  if (rangeMatch) {
+    return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
+  }
+  const singleMatch =
+    content.match(/\$?\s*(\d+(?:\.\d+)?)\s*\$?\s*\/\s*h(?:eure)?/i) ||
+    content.match(/(\d+(?:\.\d+)?)\s*\$\s*(?:de\s*l[''']heure|\/h)/i);
+  if (singleMatch) {
+    return { min: parseFloat(singleMatch[1]), max: null };
+  }
+  return { min: null, max: null };
+}
+
+function extractContractType(content: string): string | null {
+  const lower = content.toLowerCase();
+  if (/permanent/.test(lower)) return "permanent";
+  if (/temps\s+plein/.test(lower)) return "full_time";
+  if (/temps\s+partiel/.test(lower)) return "part_time";
+  if (/contract(?:uel)?/.test(lower)) return "contract";
+  if (/temporaire/.test(lower)) return "temporary";
+  return null;
+}
+
+function cleanTitle(rawTitle: string): string {
+  return rawTitle
+    .replace(/\s*[|–—]\s*(jobillico|jobboom|emploi.?qu[eé]bec)[^|–—]*/gi, "")
+    .replace(/\s*[|–—]\s*[^|–—]+$/, "")
+    .trim();
+}
+
 function normalizeTavilyResult(raw: TavilyResult): UnifiedJob {
-  const title = raw.title.replace(/\s*[|–—-]\s*[^|–—-]+$/, "").trim();
+  const title = cleanTitle(raw.title);
+
   const titleParts = raw.title.split(/\s*[|–—-]\s*/);
   const company =
     titleParts.length >= 2
@@ -70,6 +102,14 @@ function normalizeTavilyResult(raw: TavilyResult): UnifiedJob {
   );
   const location = locationMatch ? locationMatch[0].trim() : null;
 
+  const { min: salary_min, max: salary_max } = extractSalary(raw.content);
+  const contract_type = extractContractType(raw.content);
+
+  const descriptionParts = [raw.content];
+  if (salary_min) descriptionParts.push(`Salaire: ${salary_min}${salary_max ? `-${salary_max}` : ""}$/h`);
+  if (contract_type) descriptionParts.push(`Contrat: ${contract_type}`);
+  if (location) descriptionParts.push(`Lieu: ${location}`);
+
   return {
     source: "tavily",
     source_id: null,
@@ -80,16 +120,20 @@ function normalizeTavilyResult(raw: TavilyResult): UnifiedJob {
     location,
     location_lat: null,
     location_lng: null,
-    description: raw.content,
-    salary_min: null,
-    salary_max: null,
+    description: descriptionParts.join(". "),
+    salary_min,
+    salary_max,
     salary_currency: "CAD",
     salary_is_predicted: false,
     job_type: null,
     category: null,
-    contract_type: null,
-    remote_type: "unknown",
+    contract_type,
+    remote_type: /t[eé]l[eé]travail|remote/i.test(raw.content) ? "remote" : "unknown",
     posted_at: null,
     raw_data: raw,
   };
+}
+
+export function normalizeTavilyResults(raws: TavilyResult[]): UnifiedJob[] {
+  return raws.map(normalizeTavilyResult);
 }
