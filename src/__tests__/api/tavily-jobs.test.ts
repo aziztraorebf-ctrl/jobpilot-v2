@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/api/tavily", () => ({
   getTavilyClient: vi.fn(),
-  isTavilyAvailable: vi.fn(() => true),
 }));
 
 import { normalizeTavilyResults } from "@/lib/api/tavily-jobs";

@@ -50,7 +50,7 @@ export async function searchTavily(
   return { jobs, total: jobs.length };
 }
 
-interface TavilyResult {
+export interface TavilyResult {
   title: string;
   url: string;
   content: string;
@@ -63,8 +63,9 @@ function extractSalary(content: string): { min: number | null; max: number | nul
     return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
   }
   const singleMatch =
-    content.match(/\$?\s*(\d+(?:\.\d+)?)\s*\$?\s*\/\s*h(?:eure)?/i) ||
-    content.match(/(\d+(?:\.\d+)?)\s*\$\s*(?:de\s*l[''']heure|\/h)/i);
+    content.match(/\$\s*(\d+(?:\.\d+)?)\s*\/\s*h(?:eure)?/i) ||
+    content.match(/(\d+(?:\.\d+)?)\s*\$\s*\/\s*h(?:eure)?/i) ||
+    content.match(/(\d+(?:\.\d+)?)\s*\$\s*(?:de\s*l[''']heure)/i);
   if (singleMatch) {
     return { min: parseFloat(singleMatch[1]), max: null };
   }
@@ -73,6 +74,7 @@ function extractSalary(content: string): { min: number | null; max: number | nul
 
 function extractContractType(content: string): string | null {
   const lower = content.toLowerCase();
+  // permanent takes priority over full_time when both appear in same snippet
   if (/permanent/.test(lower)) return "permanent";
   if (/temps\s+plein/.test(lower)) return "full_time";
   if (/temps\s+partiel/.test(lower)) return "part_time";
@@ -83,18 +85,17 @@ function extractContractType(content: string): string | null {
 
 function cleanTitle(rawTitle: string): string {
   return rawTitle
-    .replace(/\s*[|–—]\s*(jobillico|jobboom|emploi.?qu[eé]bec)[^|–—]*/gi, "")
-    .replace(/\s*[|–—]\s*[^|–—]+$/, "")
+    .replace(/\s*[|–—]\s*(jobillico\.?(?:com)?|jobboom\.?(?:com)?|emploi.?qu[eé]bec\.?(?:ca)?)[^|–—]*/gi, "")
     .trim();
 }
 
 function normalizeTavilyResult(raw: TavilyResult): UnifiedJob {
   const title = cleanTitle(raw.title);
 
-  const titleParts = raw.title.split(/\s*[|–—-]\s*/);
+  const titleParts = raw.title.split(/\s*[|–—]\s*/);
   const company =
     titleParts.length >= 2
-      ? titleParts[titleParts.length - 2]?.trim() || null
+      ? titleParts[titleParts.length - 1]?.trim() || null
       : null;
 
   const locationMatch = raw.content.match(
@@ -120,7 +121,7 @@ function normalizeTavilyResult(raw: TavilyResult): UnifiedJob {
     location,
     location_lat: null,
     location_lng: null,
-    description: descriptionParts.join(". "),
+    description: descriptionParts.join(" | "),
     salary_min,
     salary_max,
     salary_currency: "CAD",
