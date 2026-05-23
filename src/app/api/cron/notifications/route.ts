@@ -8,10 +8,12 @@ import {
   getScoreMap,
   getStaleApplications,
   getWeeklyStats,
+  getTopScoredUnseenJobs,
 } from "@/lib/supabase/queries";
 import { sendEmail } from "@/lib/services/email-service";
 import { WeeklySummary } from "@/emails/weekly-summary";
 import { FollowUpReminder } from "@/emails/follow-up-reminder";
+import { NewJobsAlert } from "@/emails/new-jobs-alert";
 import { insertCronRun } from "@/lib/supabase/queries";
 
 const ROUTE = "/api/cron/notifications";
@@ -129,6 +131,39 @@ export async function GET(request: Request) {
             throw new Error(`Email send failed: ${reminderResult.error}`);
           }
           emailsSent++;
+        }
+        // New matches digest — envoyé pour tous les profils
+        const threshold = (prefs.alert_threshold as number | undefined) ?? 60;
+        const topJobs = await getTopScoredUnseenJobs(profile.id, threshold, 10);
+        if (topJobs.length > 0) {
+          const matchesHtml = await render(
+            NewJobsAlert({
+              jobs: topJobs.map((j) => ({
+                title: j.title,
+                company: j.company_name ?? "Inconnu",
+                location: null,
+                score: j.overall_score,
+                sourceUrl: j.source_url,
+              })),
+              threshold,
+              date: new Date().toISOString().split("T")[0],
+              keywords: [],
+            })
+          );
+
+          const matchesResult = await sendEmail({
+            subject: `[JobPilot] ${topJobs.length} nouvelle(s) offre(s) à consulter`,
+            html: matchesHtml,
+          });
+          if (!matchesResult.success) {
+            emailsFailed++;
+            console.error(
+              `[Cron notifications] New matches email failed for profile ${profile.id}:`,
+              matchesResult.error
+            );
+          } else {
+            emailsSent++;
+          }
         }
       } catch (profileError: unknown) {
         const msg = profileError instanceof Error ? profileError.message : String(profileError);
