@@ -71,7 +71,7 @@ describe("cron/notifications — new matches digest", () => {
     const res = await GET(req);
     const json = await res.json();
 
-    expect(json.emailsSent).toBeGreaterThanOrEqual(1);
+    expect(json.emailsSent).toBe(1);
     const calls = vi.mocked(emailService.sendEmail).mock.calls;
     const matchCall = calls.find((c) => c[0].subject.includes("nouvelle"));
     expect(matchCall).toBeDefined();
@@ -89,5 +89,20 @@ describe("cron/notifications — new matches digest", () => {
     const matchCall = calls.find((c) => c[0].subject.includes("nouvelle"));
     expect(matchCall).toBeUndefined();
     expect(json.emailsSent).toBe(0);
+  });
+
+  it("continues without failing cron when new matches email fails", async () => {
+    vi.mocked(queries.getProfilesWithAutoSearch).mockResolvedValue([mockProfile as never]);
+    vi.mocked(queries.getTopScoredUnseenJobs).mockResolvedValue([
+      { job_listing_id: "j1", title: "Dev", company_name: "ACME", source_url: "https://x.com", overall_score: 80 },
+    ] as never);
+    vi.mocked(emailService.sendEmail).mockResolvedValue({ success: false, error: "SMTP error" });
+
+    const req = new Request("http://localhost/api/cron/notifications");
+    const res = await GET(req);
+    const json = await res.json();
+
+    expect(json.emailsSent).toBe(0);
+    expect(res.status).toBe(200);
   });
 });

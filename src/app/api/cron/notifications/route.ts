@@ -132,13 +132,13 @@ export async function GET(request: Request) {
           }
           emailsSent++;
         }
-        // New matches digest — envoyé pour tous les profils
+        // New matches digest — best-effort: failure does not fail the cron
         const threshold = (prefs.alert_threshold as number | undefined) ?? 60;
-        const topJobs = await getTopScoredUnseenJobs(profile.id, threshold, 10);
-        if (topJobs.length > 0) {
+        const topScoredJobs = await getTopScoredUnseenJobs(profile.id, threshold, 10);
+        if (topScoredJobs.length > 0) {
           const matchesHtml = await render(
             NewJobsAlert({
-              jobs: topJobs.map((j) => ({
+              jobs: topScoredJobs.map((j) => ({
                 title: j.title,
                 company: j.company_name ?? "Inconnu",
                 location: null,
@@ -152,11 +152,10 @@ export async function GET(request: Request) {
           );
 
           const matchesResult = await sendEmail({
-            subject: `[JobPilot] ${topJobs.length} nouvelle(s) offre(s) à consulter`,
+            subject: `[JobPilot] ${topScoredJobs.length} nouvelle(s) offre(s) à consulter`,
             html: matchesHtml,
           });
           if (!matchesResult.success) {
-            emailsFailed++;
             console.error(
               `[Cron notifications] New matches email failed for profile ${profile.id}:`,
               matchesResult.error
