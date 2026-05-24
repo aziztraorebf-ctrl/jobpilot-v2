@@ -59,10 +59,10 @@ interface TavilyResult {
 
 function normalizeTavilyResult(raw: TavilyResult): UnifiedJob {
   const title = raw.title.replace(/\s*[|–—-]\s*[^|–—-]+$/, "").trim();
-  const titleParts = raw.title.split(/\s*[|–—-]\s*/);
+  const titleParts = title.split(/\s*[|–—]\s*/);
   const company =
     titleParts.length >= 2
-      ? titleParts[titleParts.length - 2]?.trim() || null
+      ? titleParts[titleParts.length - 1]?.trim() || null
       : null;
 
   const locationMatch = raw.content.match(

@@ -177,6 +177,14 @@ export async function GET(request: Request) {
             throw new Error(`Email send failed: ${alertResult.error}`);
           }
           emailsSent++;
+          // Mark alerted jobs as seen to prevent re-alert in notifications digest
+          for (const j of inserted.filter((j) => (scores[j.id] ?? 0) >= threshold)) {
+            try {
+              await markJobSeen(profile.id, j.id);
+            } catch {
+              // best-effort
+            }
+          }
         }
       } catch (profileError: unknown) {
         const msg = profileError instanceof Error ? profileError.message : String(profileError);
